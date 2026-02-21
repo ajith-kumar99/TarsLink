@@ -1,9 +1,10 @@
-import type { Id } from "../../convex/_generated/dataModel";
+import type { User } from "./user";
+import type { Message } from "./message";
 
 export type Conversation = {
-    _id: Id<"conversations">;
-    participantIds: Id<"users">[];
+    id: string;
+    name?: string;
     isGroup: boolean;
-    groupName?: string;
-    lastMessageTime?: number;
+    members: User[];
+    lastMessage?: Message;
 };

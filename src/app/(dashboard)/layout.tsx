@@ -3,6 +3,6 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // TODO: Add auth guard, sidebar layout
-    return <div className="flex h-screen">{children}</div>;
+    // Auth guard will be added here once Clerk is set up
+    return <>{children}</>;
 }
