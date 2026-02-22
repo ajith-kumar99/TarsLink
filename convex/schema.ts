@@ -27,4 +27,21 @@ export default defineSchema({
     createdAt: v.number(),
     isDeleted: v.optional(v.boolean()),
   }).index("by_conversation", ["conversationId", "createdAt"]),
+
+  // Tracks last time each user read a conversation (for unread counts)
+  readReceipts: defineTable({
+    userId: v.id("users"),
+    conversationId: v.id("conversations"),
+    lastReadAt: v.number(),
+  }).index("by_user_conversation", ["userId", "conversationId"]),
+
+  // Ephemeral typing state — expires client-side after 2 s
+  typing: defineTable({
+    userId: v.id("users"),
+    conversationId: v.id("conversations"),
+    userName: v.string(),
+    expiresAt: v.number(),
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_user_conversation", ["userId", "conversationId"]),
 });

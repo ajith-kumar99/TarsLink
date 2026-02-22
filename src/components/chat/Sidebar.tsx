@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import type { Conversation } from "@/types/conversation";
-import { formatTime } from "@/lib/formatTime";
+import { formatTimestamp } from "@/lib/formatTimestamp";
 import UserList from "./UserList";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
     conversations: Conversation[];
@@ -16,22 +20,94 @@ interface SidebarProps {
     isLoading?: boolean;
 }
 
-function getDisplayName(conv: Conversation, currentUserId: string): string {
+function getDisplayName(conv: Conversation, uid: string) {
     if (conv.isGroup && conv.name) return conv.name;
-    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== uid) ?? conv.members[0];
     return other?.name ?? "Unknown";
 }
-
-function getDisplayAvatar(conv: Conversation, currentUserId: string): string {
+function getDisplayAvatar(conv: Conversation, uid: string) {
     if (conv.isGroup) return `https://api.dicebear.com/7.x/identicon/svg?seed=${conv.id}`;
-    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== uid) ?? conv.members[0];
     return other?.imageUrl ?? "";
 }
-
-function isOtherOnline(conv: Conversation, currentUserId: string): boolean {
+function isOtherOnline(conv: Conversation, uid: string) {
     if (conv.isGroup) return false;
-    const other = conv.members.find((m) => m.id !== currentUserId);
-    return other?.isOnline ?? false;
+    return conv.members.find((m) => m.id !== uid)?.isOnline ?? false;
+}
+
+// ─── ConversationRow — isolated so useQuery respects React hook rules ─────────
+function ConversationRow({
+    conv,
+    currentUserId,
+    isSelected,
+}: {
+    conv: Conversation;
+    currentUserId: string;
+    isSelected: boolean;
+}) {
+    const router = useRouter();
+
+    const unreadCount = useQuery(api.readReceipts.getUnreadCount, {
+        conversationId: conv.id as Id<"conversations">,
+    }) ?? 0;
+
+    const hasUnread = unreadCount > 0;
+    const name = getDisplayName(conv, currentUserId);
+    const avatar = getDisplayAvatar(conv, currentUserId);
+    const online = isOtherOnline(conv, currentUserId);
+    const preview = conv.lastMessage?.content ?? "";
+    const time = conv.lastMessage ? formatTimestamp(conv.lastMessage.createdAt) : "";
+
+    return (
+        <button
+            onClick={() => router.push(`/chat/${conv.id}`)}
+            className={`
+                w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-800
+                ${isSelected ? "bg-gray-800 border-l-2 border-indigo-500" : "border-l-2 border-transparent"}
+            `}
+        >
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-700">
+                    <Image src={avatar} alt={name} width={44} height={44} className="w-full h-full object-cover" unoptimized />
+                </div>
+                {online && (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-gray-900" />
+                )}
+            </div>
+
+            {/* Text content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                    {/* Bold name when unread */}
+                    <span className={`text-sm truncate ${hasUnread ? "font-bold text-white" : "font-semibold text-white"}`}>
+                        {name}
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {/* Timestamp — indigo when unread */}
+                        {time && (
+                            <span className={`text-xs ${hasUnread ? "text-indigo-400 font-medium" : "text-gray-500"}`}>
+                                {time}
+                            </span>
+                        )}
+                        {/* Unread count badge */}
+                        {hasUnread && (
+                            <span className="min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-bold">
+                                {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Preview text — white+bold when unread, gray when read */}
+                {preview && (
+                    <p className={`text-xs truncate mt-0.5 ${hasUnread ? "text-gray-200 font-medium" : "text-gray-400"}`}>
+                        {preview}
+                    </p>
+                )}
+            </div>
+        </button>
+    );
 }
 
 type Tab = "chats" | "people";
@@ -49,11 +125,9 @@ export default function Sidebar({
 
     return (
         <div className="flex flex-col h-full bg-gray-900">
-            {/* ── Header ── */}
+            {/* Header */}
             <div className="px-4 pt-5 pb-3 border-b border-gray-800">
                 <h1 className="text-xl font-bold text-white tracking-tight">TarsLink</h1>
-
-                {/* Tab switcher */}
                 <div className="flex mt-3 bg-gray-800 rounded-xl p-1 gap-1">
                     {(["chats", "people"] as Tab[]).map((t) => (
                         <button
@@ -61,10 +135,7 @@ export default function Sidebar({
                             onClick={() => setTab(t)}
                             className={`
                                 flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize
-                                ${tab === t
-                                    ? "bg-indigo-600 text-white shadow"
-                                    : "text-gray-400 hover:text-gray-200"
-                                }
+                                ${tab === t ? "bg-indigo-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}
                             `}
                         >
                             {t}
@@ -73,13 +144,11 @@ export default function Sidebar({
                 </div>
             </div>
 
-            {/* ── Tab content ── */}
+            {/* Tab content */}
             <div className="flex-1 overflow-hidden">
-                {/* CHATS tab */}
                 {tab === "chats" && (
                     <nav className="h-full overflow-y-auto py-2">
                         {isLoading ? (
-                            /* skeleton */
                             <div className="p-4 space-y-3">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                     <div key={i} className="flex items-center gap-3">
@@ -100,61 +169,18 @@ export default function Sidebar({
                                 </p>
                             </div>
                         ) : (
-                            conversations.map((conv) => {
-                                const name = getDisplayName(conv, currentUserId);
-                                const avatar = getDisplayAvatar(conv, currentUserId);
-                                const online = isOtherOnline(conv, currentUserId);
-                                const isSelected = conv.id === selectedId;
-                                const preview = conv.lastMessage?.content ?? "";
-                                const time = conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : "";
-
-                                return (
-                                    <button
-                                        key={conv.id}
-                                        onClick={() => onSelect(conv)}
-                                        className={`
-                                            w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
-                                            hover:bg-gray-800
-                                            ${isSelected
-                                                ? "bg-gray-800 border-l-2 border-indigo-500"
-                                                : "border-l-2 border-transparent"
-                                            }
-                                        `}
-                                    >
-                                        <div className="relative flex-shrink-0">
-                                            <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-700">
-                                                <Image
-                                                    src={avatar}
-                                                    alt={name}
-                                                    width={44}
-                                                    height={44}
-                                                    className="w-full h-full object-cover"
-                                                    unoptimized
-                                                />
-                                            </div>
-                                            {online && (
-                                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-gray-900" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-semibold text-white truncate">{name}</span>
-                                                {time && (
-                                                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{time}</span>
-                                                )}
-                                            </div>
-                                            {preview && (
-                                                <p className="text-xs text-gray-400 truncate mt-0.5">{preview}</p>
-                                            )}
-                                        </div>
-                                    </button>
-                                );
-                            })
+                            conversations.map((conv) => (
+                                <ConversationRow
+                                    key={conv.id}
+                                    conv={conv}
+                                    currentUserId={currentUserId}
+                                    isSelected={conv.id === selectedId}
+                                />
+                            ))
                         )}
                     </nav>
                 )}
 
-                {/* PEOPLE tab */}
                 {tab === "people" && (
                     <div className="h-full overflow-hidden flex flex-col py-2">
                         <UserList />
@@ -162,7 +188,7 @@ export default function Sidebar({
                 )}
             </div>
 
-            {/* ── Current user footer ── */}
+            {/* Current user footer */}
             <div className="px-4 py-3 border-t border-gray-800 flex items-center gap-3">
                 <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">

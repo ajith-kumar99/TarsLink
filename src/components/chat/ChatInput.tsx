@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type KeyboardEvent } from "react";
+import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -10,32 +10,38 @@ interface ChatInputProps {
     recipientName?: string;
 }
 
+const TYPING_THROTTLE_MS = 500;
+
 export default function ChatInput({ conversationId, recipientName }: ChatInputProps) {
     const [value, setValue] = useState("");
     const [sending, setSending] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const lastTypingSentRef = useRef<number>(0);
 
-    // ── Step 4: useMutation for sendMessage ───────────────────────────────────
     const sendMessage = useMutation(api.messages.sendMessage);
+    const setTyping = useMutation(api.typing.setTyping);
+
+    // Throttled typing signal — fires at most every 500 ms
+    const notifyTyping = useCallback(() => {
+        const now = Date.now();
+        if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return;
+        lastTypingSentRef.current = now;
+        setTyping({ conversationId: conversationId as Id<"conversations"> }).catch(() => { });
+    }, [setTyping, conversationId]);
 
     const handleSend = async () => {
         const trimmed = value.trim();
         if (!trimmed || sending) return;
-
         try {
             setSending(true);
-            // Clear input immediately for snappy UX
             setValue("");
-            if (textareaRef.current) {
-                textareaRef.current.style.height = "auto";
-            }
+            if (textareaRef.current) textareaRef.current.style.height = "auto";
             await sendMessage({
                 conversationId: conversationId as Id<"conversations">,
                 content: trimmed,
             });
         } catch (err) {
             console.error("Failed to send message:", err);
-            // Restore input on error
             setValue(trimmed);
         } finally {
             setSending(false);
@@ -47,7 +53,9 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSend();
+            return;
         }
+        notifyTyping();
     };
 
     const handleInput = () => {
@@ -63,7 +71,10 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
                 <textarea
                     ref={textareaRef}
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
+                    onChange={(e) => {
+                        setValue(e.target.value);
+                        if (e.target.value.trim()) notifyTyping();
+                    }}
                     onKeyDown={handleKeyDown}
                     onInput={handleInput}
                     placeholder={recipientName ? `Message ${recipientName}…` : "Type a message…"}
@@ -75,7 +86,6 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
                         max-h-[120px] disabled:opacity-70
                     "
                 />
-
                 <button
                     onClick={handleSend}
                     disabled={!value.trim() || sending}
@@ -96,7 +106,6 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
                     )}
                 </button>
             </div>
-
             <p className="text-xs text-gray-600 mt-1.5 ml-1">
                 Press <kbd className="font-mono bg-gray-800 px-1 rounded">Enter</kbd> to send,{" "}
                 <kbd className="font-mono bg-gray-800 px-1 rounded">Shift+Enter</kbd> for new line
