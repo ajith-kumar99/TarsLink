@@ -1,10 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-/**
- * upsertUser — called on every login/signup to sync Clerk identity to Convex.
- * Creates the user if new, updates name/image if they changed.
- */
+// ─── upsertUser ───────────────────────────────────────────────────────────────
 export const upsertUser = mutation({
     args: {
         clerkId: v.string(),
@@ -13,14 +10,12 @@ export const upsertUser = mutation({
         imageUrl: v.string(),
     },
     handler: async (ctx, args) => {
-        // Check if user already exists
         const existing = await ctx.db
             .query("users")
             .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
             .unique();
 
         if (existing) {
-            // Update name/image in case they changed in Clerk
             await ctx.db.patch(existing._id, {
                 name: args.name,
                 imageUrl: args.imageUrl,
@@ -28,21 +23,17 @@ export const upsertUser = mutation({
             return existing._id;
         }
 
-        // New user — insert into DB
-        const userId = await ctx.db.insert("users", {
+        return await ctx.db.insert("users", {
             clerkId: args.clerkId,
             name: args.name,
             email: args.email,
             imageUrl: args.imageUrl,
             isOnline: false,
         });
-        return userId;
     },
 });
 
-/**
- * getCurrentUser — returns the Convex user record for the signed-in Clerk user.
- */
+// ─── getCurrentUser ───────────────────────────────────────────────────────────
 export const getCurrentUser = query({
     args: {},
     handler: async (ctx) => {
@@ -56,17 +47,46 @@ export const getCurrentUser = query({
     },
 });
 
+// ─── listUsersExceptMe ────────────────────────────────────────────────────────
 /**
- * listUsers — all users except the currently signed-in one.
- * Used for the user-search / discovery panel.
+ * Returns all users except the current one, sorted alphabetically by name.
+ * Used for the user discovery / search panel.
  */
-export const listUsers = query({
+export const listUsersExceptMe = query({
     args: {},
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) return [];
 
         const allUsers = await ctx.db.query("users").collect();
-        return allUsers.filter((u) => u.clerkId !== identity.subject);
+
+        return allUsers
+            .filter((u) => u.clerkId !== identity.subject)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((u) => ({
+                id: u._id,
+                name: u.name,
+                imageUrl: u.imageUrl,
+                isOnline: u.isOnline ?? false,
+            }));
+    },
+});
+
+/**
+ * debugAuth — returns the Clerk identity as Convex sees it.
+ * If this returns null → JWT template is not configured.
+ * If this returns an object → auth is working, check user count in listUsersExceptMe.
+ * DELETE THIS before production.
+ */
+export const debugAuth = query({
+    args: {},
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        const allUsers = await ctx.db.query("users").collect();
+        return {
+            identity: identity ? { subject: identity.subject, name: identity.name } : null,
+            totalUsersInDB: allUsers.length,
+            users: allUsers.map((u) => ({ name: u.name, clerkId: u.clerkId })),
+        };
     },
 });

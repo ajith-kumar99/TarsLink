@@ -11,9 +11,12 @@ export default defineSchema({
   }).index("by_clerkId", ["clerkId"]),
 
   conversations: defineTable({
+    // Who's in the conversation (both 1-on-1 and group)
+    members: v.array(v.id("users")),
     isGroup: v.boolean(),
     name: v.optional(v.string()),
-    participantIds: v.array(v.id("users")),
+    createdAt: v.number(),
+    // Denormalized for fast sidebar sorting
     lastMessageTime: v.optional(v.number()),
   }),
 
