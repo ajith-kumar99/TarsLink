@@ -2,36 +2,45 @@
 
 import Image from "next/image";
 import type { Conversation } from "@/types/conversation";
-import { CURRENT_USER } from "@/lib/mockData";
 import { formatTime } from "@/lib/formatTime";
 
 interface SidebarProps {
     conversations: Conversation[];
     selectedId: string | null;
     onSelect: (conversation: Conversation) => void;
+    currentUserId: string;
+    currentUserName: string;
+    currentUserImage: string;
 }
 
-function getDisplayName(conv: Conversation): string {
+function getDisplayName(conv: Conversation, currentUserId: string): string {
     if (conv.isGroup && conv.name) return conv.name;
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
     return other?.name ?? "Unknown";
 }
 
-function getDisplayAvatar(conv: Conversation): string {
+function getDisplayAvatar(conv: Conversation, currentUserId: string): string {
     if (conv.isGroup) {
         return `https://api.dicebear.com/7.x/identicon/svg?seed=${conv.id}`;
     }
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
     return other?.imageUrl ?? "";
 }
 
-function isOtherOnline(conv: Conversation): boolean {
+function isOtherOnline(conv: Conversation, currentUserId: string): boolean {
     if (conv.isGroup) return false;
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id);
+    const other = conv.members.find((m) => m.id !== currentUserId);
     return other?.isOnline ?? false;
 }
 
-export default function Sidebar({ conversations, selectedId, onSelect }: SidebarProps) {
+export default function Sidebar({
+    conversations,
+    selectedId,
+    onSelect,
+    currentUserId,
+    currentUserName,
+    currentUserImage,
+}: SidebarProps) {
     return (
         <div className="flex flex-col h-full bg-gray-900">
             {/* Header */}
@@ -50,9 +59,9 @@ export default function Sidebar({ conversations, selectedId, onSelect }: Sidebar
                     </div>
                 ) : (
                     conversations.map((conv) => {
-                        const name = getDisplayName(conv);
-                        const avatar = getDisplayAvatar(conv);
-                        const online = isOtherOnline(conv);
+                        const name = getDisplayName(conv, currentUserId);
+                        const avatar = getDisplayAvatar(conv, currentUserId);
+                        const online = isOtherOnline(conv, currentUserId);
                         const isSelected = conv.id === selectedId;
                         const preview = conv.lastMessage?.content ?? "";
                         const time = conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : "";
@@ -107,8 +116,8 @@ export default function Sidebar({ conversations, selectedId, onSelect }: Sidebar
                 <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
                         <Image
-                            src={CURRENT_USER.imageUrl}
-                            alt={CURRENT_USER.name}
+                            src={currentUserImage}
+                            alt={currentUserName}
                             width={32}
                             height={32}
                             className="w-full h-full object-cover"
@@ -117,7 +126,7 @@ export default function Sidebar({ conversations, selectedId, onSelect }: Sidebar
                     </div>
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />
                 </div>
-                <span className="text-sm font-medium text-gray-200">{CURRENT_USER.name}</span>
+                <span className="text-sm font-medium text-gray-200">{currentUserName}</span>
             </div>
         </div>
     );

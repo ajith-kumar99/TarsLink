@@ -3,7 +3,6 @@
 import Image from "next/image";
 import type { Conversation } from "@/types/conversation";
 import type { Message } from "@/types/message";
-import { CURRENT_USER } from "@/lib/mockData";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 
@@ -12,24 +11,25 @@ interface ChatWindowProps {
     messages: Message[];
     onSend: (content: string) => void;
     onBack?: () => void;
+    currentUserId: string;
 }
 
-function getDisplayName(conv: Conversation): string {
+function getDisplayName(conv: Conversation, currentUserId: string): string {
     if (conv.isGroup && conv.name) return conv.name;
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
     return other?.name ?? "Unknown";
 }
 
-function getDisplayAvatar(conv: Conversation): string {
+function getDisplayAvatar(conv: Conversation, currentUserId: string): string {
     if (conv.isGroup)
         return `https://api.dicebear.com/7.x/identicon/svg?seed=${conv.id}`;
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id) ?? conv.members[0];
+    const other = conv.members.find((m) => m.id !== currentUserId) ?? conv.members[0];
     return other?.imageUrl ?? "";
 }
 
-function isOtherOnline(conv: Conversation): boolean {
+function isOtherOnline(conv: Conversation, currentUserId: string): boolean {
     if (conv.isGroup) return false;
-    const other = conv.members.find((m) => m.id !== CURRENT_USER.id);
+    const other = conv.members.find((m) => m.id !== currentUserId);
     return other?.isOnline ?? false;
 }
 
@@ -38,6 +38,7 @@ export default function ChatWindow({
     messages,
     onSend,
     onBack,
+    currentUserId,
 }: ChatWindowProps) {
     // ── Empty state — no conversation selected ──────────────────────────────────
     if (!conversation) {
@@ -52,9 +53,9 @@ export default function ChatWindow({
         );
     }
 
-    const name = getDisplayName(conversation);
-    const avatar = getDisplayAvatar(conversation);
-    const online = isOtherOnline(conversation);
+    const name = getDisplayName(conversation, currentUserId);
+    const avatar = getDisplayAvatar(conversation, currentUserId);
+    const online = isOtherOnline(conversation, currentUserId);
 
     return (
         <div className="flex flex-col h-full bg-gray-950">
@@ -113,7 +114,7 @@ export default function ChatWindow({
                     </div>
                 ) : (
                     messages.map((msg, index) => {
-                        const isMine = msg.senderId === CURRENT_USER.id;
+                        const isMine = msg.senderId === currentUserId;
                         const prevMsg = index > 0 ? messages[index - 1] : null;
                         const showAvatar =
                             !isMine && (!prevMsg || prevMsg.senderId !== msg.senderId);
