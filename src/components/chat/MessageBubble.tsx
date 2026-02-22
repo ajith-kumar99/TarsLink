@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import type { Message } from "@/types/message";
-import { formatTime } from "@/lib/formatTime";
+import { formatTimestamp } from "@/lib/formatTimestamp";
 
 interface MessageBubbleProps {
     message: Message;
@@ -60,7 +60,7 @@ export default function MessageBubble({
 
                 {/* Timestamp — visible on hover */}
                 <span className="text-xs text-gray-600 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {formatTime(message.createdAt)}
+                    {formatTimestamp(message.createdAt)}
                 </span>
             </div>
         </div>
