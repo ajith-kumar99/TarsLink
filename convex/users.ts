@@ -1,6 +1,13 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+/** A user is "online" if their lastSeen was within the last 30 seconds. */
+const ONLINE_THRESHOLD_MS = 30_000;
+function computeIsOnline(lastSeen?: number): boolean {
+    if (!lastSeen) return false;
+    return Date.now() - lastSeen < ONLINE_THRESHOLD_MS;
+}
+
 // ─── upsertUser ───────────────────────────────────────────────────────────────
 export const upsertUser = mutation({
     args: {
@@ -15,10 +22,14 @@ export const upsertUser = mutation({
             .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
             .unique();
 
+        const now = Date.now();
+
         if (existing) {
             await ctx.db.patch(existing._id, {
                 name: args.name,
                 imageUrl: args.imageUrl,
+                lastSeen: now,
+                isOnline: true,
             });
             return existing._id;
         }
@@ -28,7 +39,32 @@ export const upsertUser = mutation({
             name: args.name,
             email: args.email,
             imageUrl: args.imageUrl,
-            isOnline: false,
+            isOnline: true,
+            lastSeen: now,
+        });
+    },
+});
+
+// ─── updatePresence ───────────────────────────────────────────────────────────
+/**
+ * Heartbeat mutation — called every 20 s from the client.
+ * Updates lastSeen to now. isOnline is computed from lastSeen in queries.
+ */
+export const updatePresence = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return;
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) return;
+
+        await ctx.db.patch(me._id, {
+            lastSeen: Date.now(),
+            isOnline: true,
         });
     },
 });
@@ -40,17 +76,20 @@ export const getCurrentUser = query({
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) return null;
 
-        return await ctx.db
+        const user = await ctx.db
             .query("users")
             .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
             .unique();
+
+        if (!user) return null;
+        return { ...user, isOnline: computeIsOnline(user.lastSeen) };
     },
 });
 
 // ─── listUsersExceptMe ────────────────────────────────────────────────────────
 /**
- * Returns all users except the current one, sorted alphabetically by name.
- * Used for the user discovery / search panel.
+ * Returns all users except the current one, sorted alphabetically.
+ * isOnline is computed from lastSeen so it's always fresh when the query re-runs.
  */
 export const listUsersExceptMe = query({
     args: {},
@@ -67,15 +106,14 @@ export const listUsersExceptMe = query({
                 id: u._id,
                 name: u.name,
                 imageUrl: u.imageUrl,
-                isOnline: u.isOnline ?? false,
+                isOnline: computeIsOnline(u.lastSeen),
+                lastSeen: u.lastSeen ?? 0,
             }));
     },
 });
 
 /**
  * debugAuth — returns the Clerk identity as Convex sees it.
- * If this returns null → JWT template is not configured.
- * If this returns an object → auth is working, check user count in listUsersExceptMe.
  * DELETE THIS before production.
  */
 export const debugAuth = query({
@@ -86,7 +124,7 @@ export const debugAuth = query({
         return {
             identity: identity ? { subject: identity.subject, name: identity.name } : null,
             totalUsersInDB: allUsers.length,
-            users: allUsers.map((u) => ({ name: u.name, clerkId: u.clerkId })),
+            users: allUsers.map((u) => ({ name: u.name, clerkId: u.clerkId, lastSeen: u.lastSeen })),
         };
     },
 });

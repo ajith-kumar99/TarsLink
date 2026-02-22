@@ -8,6 +8,7 @@ export default defineSchema({
     clerkId: v.string(),
     email: v.string(),
     isOnline: v.optional(v.boolean()),
+    lastSeen: v.optional(v.number()),   // epoch ms — source of truth for presence
   }).index("by_clerkId", ["clerkId"]),
 
   conversations: defineTable({

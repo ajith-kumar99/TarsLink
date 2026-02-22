@@ -5,12 +5,13 @@ import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { RedirectToSignIn } from "@clerk/nextjs";
+import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoaded, isSignedIn } = useUser();
     const upsertUser = useMutation(api.users.upsertUser);
 
-    // Sync Clerk identity → Convex on every mount / login
+    // Sync Clerk identity → Convex on every mount / login (also sets initial lastSeen)
     useEffect(() => {
         if (!isLoaded || !isSignedIn || !user) return;
 
@@ -22,10 +23,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         });
     }, [isLoaded, isSignedIn, user, upsertUser]);
 
-    // Not loaded yet — blank screen (Clerk hydrating)
-    if (!isLoaded) return null;
+    // Send presence heartbeat every 20 s while dashboard is mounted
+    usePresenceHeartbeat();
 
-    // Not signed in — redirect to sign-in
+    if (!isLoaded) return null;
     if (!isSignedIn) return <RedirectToSignIn />;
 
     return <>{children}</>;
