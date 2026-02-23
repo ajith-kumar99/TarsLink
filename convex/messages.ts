@@ -4,7 +4,7 @@ import { v } from "convex/values";
 // ─── getMessages ──────────────────────────────────────────────────────────────
 /**
  * Returns all messages for a conversation, ordered oldest → newest.
- * Convex subscriptions make this live — both sides see updates instantly.
+ * Deleted messages are still returned — the UI shows a placeholder.
  */
 export const getMessages = query({
     args: {
@@ -63,7 +63,6 @@ export const sendMessage = mutation({
 
         const now = Date.now();
 
-        // Insert the message
         const messageId = await ctx.db.insert("messages", {
             conversationId: args.conversationId,
             senderId: me._id,
@@ -71,9 +70,45 @@ export const sendMessage = mutation({
             createdAt: now,
         });
 
-        // Update conversation's lastMessageTime for sidebar sorting
         await ctx.db.patch(args.conversationId, { lastMessageTime: now });
 
         return messageId;
+    },
+});
+
+// ─── deleteMessage ────────────────────────────────────────────────────────────
+/**
+ * Soft-deletes a message by setting deletedAt = now.
+ * Only the original sender can delete their own messages.
+ * The record stays in the DB — the UI shows "This message was deleted".
+ */
+export const deleteMessage = mutation({
+    args: {
+        messageId: v.id("messages"),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) throw new Error("User not found");
+
+        const message = await ctx.db.get(args.messageId);
+        if (!message) throw new Error("Message not found");
+
+        // Only the sender can delete their own message
+        if (String(message.senderId) !== String(me._id)) {
+            throw new Error("You can only delete your own messages");
+        }
+
+        // Already deleted — no-op
+        if (message.deletedAt) return;
+
+        await ctx.db.patch(args.messageId, {
+            deletedAt: Date.now(),
+        });
     },
 });

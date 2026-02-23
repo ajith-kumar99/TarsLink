@@ -51,7 +51,7 @@ function useTypingUsers(conversationId: string) {
     return active;
 }
 
-// ─── Loading skeleton for messages ────────────────────────────────────────────
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
 function MessagesSkeleton() {
     return (
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
@@ -89,7 +89,7 @@ function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
             </div>
             <p className="text-gray-300 text-sm font-medium mb-1">No messages yet</p>
             <p className="text-gray-500 text-xs max-w-[200px]">
-                Say hello to <span className="text-indigo-400">{recipientName}</span> and start your conversation!
+                Say hello to <span className="text-indigo-400">{recipientName}</span> and start the conversation!
             </p>
         </div>
     );
@@ -117,27 +117,28 @@ function NoConversationPlaceholder() {
 // ─── New Messages FAB ─────────────────────────────────────────────────────────
 function NewMessagesFab({ count, onClick }: { count: number; onClick: () => void }) {
     return (
-        <button
-            onClick={onClick}
-            className="
-                absolute bottom-20 left-1/2 -translate-x-1/2 z-10
-                flex items-center gap-2 px-4 py-2
-                bg-indigo-600 hover:bg-indigo-500
-                text-white text-xs font-medium
-                rounded-full shadow-lg shadow-indigo-900/40
-                transition-all duration-200
-                animate-[slideUp_0.2s_ease-out]
-            "
-        >
-            <span>
+        <div className="absolute bottom-4 inset-x-0 flex justify-center z-10 pointer-events-none">
+            <button
+                onClick={onClick}
+                className="
+                    pointer-events-auto
+                    inline-flex items-center gap-1.5 px-4 py-2
+                    bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                    text-white text-xs font-semibold
+                    rounded-full
+                    shadow-lg shadow-black/30
+                    transition-colors duration-150
+                    animate-[fadeSlideUp_0.25s_ease-out]
+                "
+            >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
                 {count > 0
                     ? `${count} new message${count > 1 ? "s" : ""}`
                     : "New messages"}
-            </span>
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-        </button>
+            </button>
+        </div>
     );
 }
 
@@ -197,7 +198,7 @@ function MessagesArea({
         markReadStable();
     }, [markReadStable, messages?.length]);
 
-    // ── Also scroll to bottom when typing indicator appears (if near bottom)
+    // ── Scroll for typing indicator (only if near bottom) ────────────
     useEffect(() => {
         if (typingUsers.length > 0 && !isScrolledUp) {
             requestAnimationFrame(() => {
@@ -233,10 +234,11 @@ function MessagesArea({
 
     return (
         <>
-            <div className="relative flex-1 overflow-hidden">
+            {/* Scrollable messages area — relative so the FAB can position absolutely inside */}
+            <div className="relative flex-1 min-h-0 flex flex-col">
                 <div
                     ref={containerRef}
-                    className="h-full overflow-y-auto px-4 py-4 space-y-1"
+                    className="flex-1 overflow-y-auto px-4 py-4 space-y-1"
                 >
                     {messages.length === 0 ? (
                         <NoMessagesPlaceholder recipientName={recipientName} />
@@ -266,6 +268,7 @@ function MessagesArea({
                                             senderId: msg.senderId as string,
                                             content: msg.content,
                                             createdAt: msg.createdAt,
+                                            deletedAt: msg.deletedAt,
                                         }}
                                         isMine={isMine}
                                         showAvatar={showAvatar}
@@ -297,10 +300,11 @@ function MessagesArea({
                         </div>
                     )}
 
-                    <div ref={bottomRef} />
+                    {/* Scroll anchor */}
+                    <div ref={bottomRef} className="h-px" />
                 </div>
 
-                {/* "New Messages ↓" floating button */}
+                {/* ↓ New Messages floating button */}
                 {isScrolledUp && newMessageCount > 0 && (
                     <NewMessagesFab count={newMessageCount} onClick={scrollToBottom} />
                 )}

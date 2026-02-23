@@ -1,99 +1,127 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 
-const NEAR_BOTTOM_THRESHOLD = 150; // px from bottom to consider "near bottom"
+const NEAR_BOTTOM_PX = 200; // user is "near bottom" if within this many pixels
 
-interface AutoScrollReturn {
-    /** Attach to the scrollable container */
-    containerRef: React.RefObject<HTMLDivElement | null>;
-    /** Attach to a sentinel <div> at the very bottom of the list */
+interface UseAutoScrollResult {
+    /** Attach to the scrollable container element */
+    containerRef: (node: HTMLDivElement | null) => void;
+    /** Attach to an empty <div> at the very bottom of the message list */
     bottomRef: React.RefObject<HTMLDivElement | null>;
-    /** true when the user has scrolled up away from the bottom */
+    /** True when user has intentionally scrolled away from the bottom */
     isScrolledUp: boolean;
-    /** Number of new messages that arrived while scrolled up */
+    /** Number of new messages that arrived while user was scrolled up */
     newMessageCount: number;
-    /** Call to smoothly scroll to the bottom and reset counts */
+    /** Programmatically scroll to the bottom and reset the counter */
     scrollToBottom: () => void;
 }
 
 /**
- * Smart auto-scroll hook for chat UIs.
+ * Smart auto-scroll for chat.
  *
- * - Auto-scrolls when a new message arrives IF the user is near the bottom.
- * - Does NOT force-scroll if the user has intentionally scrolled up.
- * - Tracks how many messages arrived while scrolled up → "New Messages ↓" badge.
- * - Always auto-scrolls for messages the current user sends.
+ * ✅ Auto-scrolls when a new message arrives and user is near the bottom.
+ * ✅ Always auto-scrolls for the current user's own messages.
+ * ✅ Does NOT auto-scroll if the user has scrolled up to read history.
+ * ✅ Tracks pending new-message count → powers a "↓ N new messages" FAB.
+ * ✅ Instant (no animation) jump on first load.
  */
 export function useAutoScroll(
     messageCount: number,
     latestSenderId?: string,
     currentUserId?: string,
-): AutoScrollReturn {
-    const containerRef = useRef<HTMLDivElement | null>(null);
+): UseAutoScrollResult {
+    // Using a callback ref so we re-attach the scroll listener when the DOM node changes
+    const [container, setContainer] = useState<HTMLDivElement | null>(null);
+    const containerRef = useCallback((node: HTMLDivElement | null) => {
+        setContainer(node);
+    }, []);
+
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const [isScrolledUp, setIsScrolledUp] = useState(false);
     const [newMessageCount, setNewMessageCount] = useState(0);
-    const prevCountRef = useRef(messageCount);
-    const isInitialMount = useRef(true);
 
-    // ── Check if user is near the bottom ─────────────────────────────
-    const checkNearBottom = useCallback((): boolean => {
-        const el = containerRef.current;
-        if (!el) return true;
-        const { scrollTop, scrollHeight, clientHeight } = el;
-        return scrollHeight - scrollTop - clientHeight < NEAR_BOTTOM_THRESHOLD;
-    }, []);
+    // Track whether we've done the initial scroll-to-bottom
+    const hasScrolledInitially = useRef(false);
+    // Track the previous message count to detect new messages
+    const prevMessageCount = useRef(0);
 
-    // ── Scroll handler — track if user scrolled up ───────────────────
+    // ── Utility: is the user near the bottom? ────────────────────────
+    const isNearBottom = useCallback((): boolean => {
+        if (!container) return true;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        return scrollHeight - scrollTop - clientHeight <= NEAR_BOTTOM_PX;
+    }, [container]);
+
+    // ── Listen for user scroll to track scrolled-up state ────────────
     useEffect(() => {
-        const el = containerRef.current;
-        if (!el) return;
+        if (!container) return;
 
-        const handleScroll = () => {
-            const nearBottom = checkNearBottom();
-            setIsScrolledUp(!nearBottom);
-            if (nearBottom) {
-                setNewMessageCount(0);
-            }
+        let ticking = false;
+        const onScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                const nearBottom = isNearBottom();
+                setIsScrolledUp(!nearBottom);
+                // Clear badge when user scrolls back down
+                if (nearBottom) setNewMessageCount(0);
+                ticking = false;
+            });
         };
 
-        el.addEventListener("scroll", handleScroll, { passive: true });
-        return () => el.removeEventListener("scroll", handleScroll);
-    }, [checkNearBottom]);
+        container.addEventListener("scroll", onScroll, { passive: true });
+        return () => container.removeEventListener("scroll", onScroll);
+    }, [container, isNearBottom]);
 
-    // ── React to new messages ────────────────────────────────────────
-    useEffect(() => {
-        const newMessages = messageCount - prevCountRef.current;
-        prevCountRef.current = messageCount;
+    // ── React to message count changes ───────────────────────────────
+    useLayoutEffect(() => {
+        // Skip when messages haven't loaded yet
+        if (messageCount === 0) return;
 
-        if (newMessages <= 0) return;
+        const delta = messageCount - prevMessageCount.current;
+        prevMessageCount.current = messageCount;
 
-        // Always scroll on initial load
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
+        // ── First load: instant jump to bottom ──
+        if (!hasScrolledInitially.current) {
+            hasScrolledInitially.current = true;
+            // Use double-rAF to ensure DOM has painted
             requestAnimationFrame(() => {
-                bottomRef.current?.scrollIntoView();
+                requestAnimationFrame(() => {
+                    bottomRef.current?.scrollIntoView();
+                });
             });
             return;
         }
 
-        const isMine = latestSenderId && currentUserId && latestSenderId === currentUserId;
-        const nearBottom = checkNearBottom();
+        // No new messages (e.g. conversation switch)
+        if (delta <= 0) return;
 
-        if (nearBottom || isMine) {
-            // Auto-scroll smoothly
+        const sentByMe =
+            !!latestSenderId && !!currentUserId && latestSenderId === currentUserId;
+
+        if (sentByMe || isNearBottom()) {
+            // Smooth scroll to bottom
             requestAnimationFrame(() => {
                 bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             });
             setNewMessageCount(0);
+            setIsScrolledUp(false);
         } else {
-            // User is scrolled up — accumulate badge count
-            setNewMessageCount((prev) => prev + newMessages);
+            // User is scrolled up — don't force them down
+            setNewMessageCount((prev) => prev + delta);
         }
-    }, [messageCount, latestSenderId, currentUserId, checkNearBottom]);
+    }, [messageCount, latestSenderId, currentUserId, isNearBottom]);
 
-    // ── Manual scroll-to-bottom (for the "New Messages ↓" button) ───
+    // ── Reset state when conversation changes ────────────────────────
+    useEffect(() => {
+        hasScrolledInitially.current = false;
+        prevMessageCount.current = 0;
+        setNewMessageCount(0);
+        setIsScrolledUp(false);
+    }, [currentUserId]); // run once per conversation mount
+
+    // ── Manual scroll-to-bottom ──────────────────────────────────────
     const scrollToBottom = useCallback(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         setIsScrolledUp(false);

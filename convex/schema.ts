@@ -26,7 +26,7 @@ export default defineSchema({
     senderId: v.id("users"),
     content: v.string(),
     createdAt: v.number(),
-    isDeleted: v.optional(v.boolean()),
+    deletedAt: v.optional(v.number()),
   }).index("by_conversation", ["conversationId", "createdAt"]),
 
   // Tracks last time each user read a conversation (for unread counts)
