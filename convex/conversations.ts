@@ -77,3 +77,39 @@ export const getOrCreateConversation = mutation({
         return newId;
     },
 });
+
+// ─── createGroupConversation ──────────────────────────────────────────────────
+export const createGroupConversation = mutation({
+    args: {
+        name: v.string(),
+        memberIds: v.array(v.id("users")),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) throw new Error("Current user not found in DB");
+
+        const name = args.name.trim();
+        if (!name) throw new Error("Group name is required");
+        if (args.memberIds.length < 1) throw new Error("Groups need at least 1 other member");
+
+        // Deduplicate and always include the creator
+        const memberSet = new Set(args.memberIds.map(String));
+        memberSet.add(String(me._id));
+        const members = [...memberSet].map((id) => id as Id<"users">);
+
+        const newId = await ctx.db.insert("conversations", {
+            members,
+            isGroup: true,
+            name,
+            createdAt: Date.now(),
+        });
+
+        return newId;
+    },
+});

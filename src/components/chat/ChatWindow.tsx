@@ -316,10 +316,35 @@ function MessagesArea({
     );
 }
 
+// ─── GroupMemberRow ───────────────────────────────────────────────────────────
+function GroupMemberRow({ member, isCurrentUser }: { member: Conversation["members"][0]; isCurrentUser: boolean }) {
+    const online = useIsOnline(member.lastSeen);
+    return (
+        <div className="flex items-center gap-3 px-4 py-2.5">
+            <div className="relative flex-shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
+                    <Image src={member.imageUrl} alt={member.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+                </div>
+                {online && <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-gray-900" />}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                    {member.name}
+                    {isCurrentUser && <span className="text-xs text-indigo-400 ml-1.5">(You)</span>}
+                </p>
+                <p className={`text-xs ${online ? "text-emerald-400" : "text-gray-500"}`}>
+                    {online ? "Online" : "Offline"}
+                </p>
+            </div>
+        </div>
+    );
+}
+
 // ─── ChatWindow ───────────────────────────────────────────────────────────────
 export default function ChatWindow({ conversation, onBack, currentUserId }: ChatWindowProps) {
     const otherLastSeen = conversation ? getOtherLastSeen(conversation, currentUserId) : undefined;
     const online = useIsOnline(otherLastSeen);
+    const [showMembers, setShowMembers] = useState(false);
 
     if (!conversation) {
         return <NoConversationPlaceholder />;
@@ -345,13 +370,54 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
                     </div>
                     {online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />}
                 </div>
-                <div className="flex-1 min-w-0">
+
+                {/* Clickable name / status — toggles members panel for groups */}
+                <button
+                    onClick={() => conversation.isGroup && setShowMembers((v) => !v)}
+                    className={`flex-1 min-w-0 text-left ${conversation.isGroup ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
+                >
                     <h2 className="text-sm font-semibold text-white truncate">{name}</h2>
-                    <p className={`text-xs ${online ? "text-emerald-400" : "text-gray-500"}`}>
-                        {conversation.isGroup ? `${conversation.members.length} members` : online ? "Online" : "Offline"}
+                    <p className={`text-xs ${conversation.isGroup ? "text-gray-400" : online ? "text-emerald-400" : "text-gray-500"}`}>
+                        {conversation.isGroup
+                            ? `${conversation.members.length} members · tap to ${showMembers ? "hide" : "view"}`
+                            : online ? "Online" : "Offline"}
                     </p>
-                </div>
+                </button>
+
+                {/* Members toggle icon for groups */}
+                {conversation.isGroup && (
+                    <button
+                        onClick={() => setShowMembers((v) => !v)}
+                        className={`p-1.5 rounded-lg transition-colors ${showMembers ? "bg-indigo-600/20 text-indigo-400" : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"}`}
+                        aria-label="Toggle members panel"
+                        title="Group members"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                )}
             </div>
+
+            {/* Group Members Panel (slides open) */}
+            {conversation.isGroup && showMembers && (
+                <div className="border-b border-gray-800 bg-gray-900/80 overflow-y-auto max-h-60">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                            Members ({conversation.members.length})
+                        </p>
+                    </div>
+                    <div className="py-1">
+                        {conversation.members.map((member) => (
+                            <GroupMemberRow
+                                key={member.id}
+                                member={member}
+                                isCurrentUser={member.id === currentUserId}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Messages + Input */}
             <MessagesArea
@@ -364,3 +430,4 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
         </div>
     );
 }
+
