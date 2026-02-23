@@ -20,6 +20,7 @@ function adaptConversation(doc: any): Conversation {
             name: m.name as string,
             imageUrl: m.imageUrl as string,
             isOnline: m.isOnline as boolean,
+            lastSeen: m.lastSeen as number | undefined,
         })),
         lastMessage: undefined,
     };

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { useIsOnline } from "@/hooks/useIsOnline";
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
 function UserRowSkeleton() {
@@ -20,21 +21,73 @@ function UserRowSkeleton() {
     );
 }
 
+// ─── UserRow — isolated so useIsOnline hook can run per-user ──────────────────
+function UserRow({
+    user,
+    isStarting,
+    onSelect,
+}: {
+    user: { id: unknown; name: string; imageUrl: string; lastSeen: number };
+    isStarting: boolean;
+    onSelect: () => void;
+}) {
+    const online = useIsOnline(user.lastSeen);
+
+    return (
+        <button
+            onClick={onSelect}
+            disabled={isStarting}
+            className="
+                w-full flex items-center gap-3 px-4 py-3 text-left
+                hover:bg-gray-800 transition-colors
+                disabled:opacity-60 disabled:cursor-wait
+            "
+        >
+            {/* Avatar + online dot */}
+            <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700">
+                    <Image
+                        src={user.imageUrl}
+                        alt={user.name}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                    />
+                </div>
+                {online && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />
+                )}
+            </div>
+
+            {/* Name */}
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                <p className={`text-xs ${online ? "text-emerald-400" : "text-gray-500"}`}>
+                    {online ? "Online" : "Offline"}
+                </p>
+            </div>
+
+            {/* Starting spinner */}
+            {isStarting && (
+                <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            )}
+        </button>
+    );
+}
+
 export default function UserList() {
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
-    // ── Step 4: fetch users from Convex ──────────────────────────────────────
     const users = useQuery(api.users.listUsersExceptMe);
     const getOrCreate = useMutation(api.conversations.getOrCreateConversation);
 
-    // ── Step 5: client-side search filter ────────────────────────────────────
     const filtered = users?.filter((u) =>
         u.name.toLowerCase().includes(search.toLowerCase().trim())
     );
 
-    // ── Step 6: start conversation ────────────────────────────────────────────
     const handleSelectUser = async (userId: string) => {
         try {
             setLoadingId(userId);
@@ -96,7 +149,6 @@ export default function UserList() {
 
             {/* List */}
             <div className="flex-1 overflow-y-auto">
-                {/* Loading */}
                 {users === undefined && (
                     <>
                         {Array.from({ length: 6 }).map((_, i) => (
@@ -105,7 +157,6 @@ export default function UserList() {
                     </>
                 )}
 
-                {/* No results after search */}
                 {filtered !== undefined && filtered.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-36 text-center px-6">
                         <p className="text-gray-400 text-sm">
@@ -114,52 +165,14 @@ export default function UserList() {
                     </div>
                 )}
 
-                {/* User rows */}
-                {filtered?.map((user) => {
-                    const isStarting = loadingId === user.id;
-                    return (
-                        <button
-                            key={user.id as string}
-                            onClick={() => handleSelectUser(user.id as string)}
-                            disabled={isStarting}
-                            className="
-                                w-full flex items-center gap-3 px-4 py-3 text-left
-                                hover:bg-gray-800 transition-colors
-                                disabled:opacity-60 disabled:cursor-wait
-                            "
-                        >
-                            {/* Avatar + online dot */}
-                            <div className="relative flex-shrink-0">
-                                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700">
-                                    <Image
-                                        src={user.imageUrl}
-                                        alt={user.name}
-                                        width={40}
-                                        height={40}
-                                        className="w-full h-full object-cover"
-                                        unoptimized
-                                    />
-                                </div>
-                                {user.isOnline && (
-                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />
-                                )}
-                            </div>
-
-                            {/* Name */}
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                                <p className={`text-xs ${user.isOnline ? "text-emerald-400" : "text-gray-500"}`}>
-                                    {user.isOnline ? "Online" : "Offline"}
-                                </p>
-                            </div>
-
-                            {/* Starting spinner */}
-                            {isStarting && (
-                                <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                            )}
-                        </button>
-                    );
-                })}
+                {filtered?.map((user) => (
+                    <UserRow
+                        key={user.id as string}
+                        user={user as { id: unknown; name: string; imageUrl: string; lastSeen: number }}
+                        isStarting={loadingId === (user.id as string)}
+                        onSelect={() => handleSelectUser(user.id as string)}
+                    />
+                ))}
             </div>
         </div>
     );

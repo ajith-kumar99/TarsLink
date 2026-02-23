@@ -47,8 +47,8 @@ export const upsertUser = mutation({
 
 // ─── updatePresence ───────────────────────────────────────────────────────────
 /**
- * Heartbeat mutation — called every 20 s from the client.
- * Updates lastSeen to now. isOnline is computed from lastSeen in queries.
+ * Heartbeat mutation — called every 10 s from the client.
+ * Updates lastSeen to now.
  */
 export const updatePresence = mutation({
     args: {},
@@ -65,6 +65,30 @@ export const updatePresence = mutation({
         await ctx.db.patch(me._id, {
             lastSeen: Date.now(),
             isOnline: true,
+        });
+    },
+});
+
+// ─── setOffline ───────────────────────────────────────────────────────────────
+/**
+ * Called on tab close / visibility-hidden. Sets lastSeen to epoch-start
+ * so all subscribers see the user as offline INSTANTLY via Convex push.
+ */
+export const setOffline = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return;
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) return;
+
+        await ctx.db.patch(me._id, {
+            lastSeen: 1, // epoch start → always > 30 s ago → offline
+            isOnline: false,
         });
     },
 });

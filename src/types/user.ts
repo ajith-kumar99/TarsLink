@@ -3,4 +3,5 @@ export type User = {
     name: string;
     imageUrl: string;
     isOnline: boolean;
+    lastSeen?: number;
 };

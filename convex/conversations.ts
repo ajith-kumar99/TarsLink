@@ -2,12 +2,6 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
-const ONLINE_THRESHOLD_MS = 30_000;
-function computeIsOnline(lastSeen?: number): boolean {
-    if (!lastSeen) return false;
-    return Date.now() - lastSeen < ONLINE_THRESHOLD_MS;
-}
-
 // ─── getConversations ─────────────────────────────────────────────────────────
 export const getConversations = query({
     args: {},
@@ -36,8 +30,8 @@ export const getConversations = query({
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .map((m: any) => ({
                             ...m,
-                            // Compute isOnline from lastSeen at query time
-                            isOnline: computeIsOnline(m.lastSeen),
+                            // Pass raw lastSeen to client — client computes isOnline
+                            lastSeen: m.lastSeen ?? 0,
                         })),
                 };
             })

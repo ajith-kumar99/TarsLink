@@ -7,6 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import type { Conversation } from "@/types/conversation";
 import { formatTimestamp } from "@/lib/formatTimestamp";
+import { useIsOnline } from "@/hooks/useIsOnline";
 import UserList from "./UserList";
 import { useRouter } from "next/navigation";
 
@@ -30,12 +31,12 @@ function getDisplayAvatar(conv: Conversation, uid: string) {
     const other = conv.members.find((m) => m.id !== uid) ?? conv.members[0];
     return other?.imageUrl ?? "";
 }
-function isOtherOnline(conv: Conversation, uid: string) {
-    if (conv.isGroup) return false;
-    return conv.members.find((m) => m.id !== uid)?.isOnline ?? false;
+function getOtherLastSeen(conv: Conversation, uid: string): number | undefined {
+    if (conv.isGroup) return undefined;
+    return conv.members.find((m) => m.id !== uid)?.lastSeen;
 }
 
-// ─── ConversationRow — isolated so useQuery respects React hook rules ─────────
+// ─── ConversationRow ──────────────────────────────────────────────────────────
 function ConversationRow({
     conv,
     currentUserId,
@@ -51,10 +52,13 @@ function ConversationRow({
         conversationId: conv.id as Id<"conversations">,
     }) ?? 0;
 
+    // Client-side presence — rechecks every 10 s
+    const otherLastSeen = getOtherLastSeen(conv, currentUserId);
+    const online = useIsOnline(otherLastSeen);
+
     const hasUnread = unreadCount > 0;
     const name = getDisplayName(conv, currentUserId);
     const avatar = getDisplayAvatar(conv, currentUserId);
-    const online = isOtherOnline(conv, currentUserId);
     const preview = conv.lastMessage?.content ?? "";
     const time = conv.lastMessage ? formatTimestamp(conv.lastMessage.createdAt) : "";
 
@@ -66,7 +70,6 @@ function ConversationRow({
                 ${isSelected ? "bg-gray-800 border-l-2 border-indigo-500" : "border-l-2 border-transparent"}
             `}
         >
-            {/* Avatar */}
             <div className="relative flex-shrink-0">
                 <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-700">
                     <Image src={avatar} alt={name} width={44} height={44} className="w-full h-full object-cover" unoptimized />
@@ -76,21 +79,17 @@ function ConversationRow({
                 )}
             </div>
 
-            {/* Text content */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                    {/* Bold name when unread */}
                     <span className={`text-sm truncate ${hasUnread ? "font-bold text-white" : "font-semibold text-white"}`}>
                         {name}
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {/* Timestamp — indigo when unread */}
                         {time && (
                             <span className={`text-xs ${hasUnread ? "text-indigo-400 font-medium" : "text-gray-500"}`}>
                                 {time}
                             </span>
                         )}
-                        {/* Unread count badge */}
                         {hasUnread && (
                             <span className="min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-bold">
                                 {unreadCount > 99 ? "99+" : unreadCount}
@@ -98,8 +97,6 @@ function ConversationRow({
                         )}
                     </div>
                 </div>
-
-                {/* Preview text — white+bold when unread, gray when read */}
                 {preview && (
                     <p className={`text-xs truncate mt-0.5 ${hasUnread ? "text-gray-200 font-medium" : "text-gray-400"}`}>
                         {preview}
@@ -125,7 +122,6 @@ export default function Sidebar({
 
     return (
         <div className="flex flex-col h-full bg-gray-900">
-            {/* Header */}
             <div className="px-4 pt-5 pb-3 border-b border-gray-800">
                 <h1 className="text-xl font-bold text-white tracking-tight">TarsLink</h1>
                 <div className="flex mt-3 bg-gray-800 rounded-xl p-1 gap-1">
@@ -144,7 +140,6 @@ export default function Sidebar({
                 </div>
             </div>
 
-            {/* Tab content */}
             <div className="flex-1 overflow-hidden">
                 {tab === "chats" && (
                     <nav className="h-full overflow-y-auto py-2">
@@ -188,7 +183,6 @@ export default function Sidebar({
                 )}
             </div>
 
-            {/* Current user footer */}
             <div className="px-4 py-3 border-t border-gray-800 flex items-center gap-3">
                 <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
