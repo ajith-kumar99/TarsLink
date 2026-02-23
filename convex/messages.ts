@@ -22,14 +22,30 @@ export const getMessages = query({
             .order("asc")
             .collect();
 
-        // Enrich each message with sender info
+        // Enrich each message with sender info + reply preview
         const enriched = await Promise.all(
             messages.map(async (msg) => {
                 const sender = await ctx.db.get(msg.senderId);
+
+                // If this message is a reply, fetch the original message preview
+                let replyPreview = undefined;
+                if (msg.replyToId) {
+                    const original = await ctx.db.get(msg.replyToId);
+                    if (original) {
+                        const originalSender = await ctx.db.get(original.senderId);
+                        replyPreview = {
+                            senderName: originalSender?.name ?? "Unknown",
+                            content: original.content,
+                            isDeleted: !!original.deletedAt,
+                        };
+                    }
+                }
+
                 return {
                     ...msg,
                     senderName: sender?.name ?? "Unknown",
                     senderImage: sender?.imageUrl ?? "",
+                    replyPreview,
                 };
             })
         );
@@ -47,6 +63,7 @@ export const sendMessage = mutation({
     args: {
         conversationId: v.id("conversations"),
         content: v.string(),
+        replyToId: v.optional(v.id("messages")),
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -68,6 +85,7 @@ export const sendMessage = mutation({
             senderId: me._id,
             content,
             createdAt: now,
+            ...(args.replyToId ? { replyToId: args.replyToId } : {}),
         });
 
         await ctx.db.patch(args.conversationId, { lastMessageTime: now });

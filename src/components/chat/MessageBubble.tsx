@@ -306,6 +306,8 @@ interface MessageBubbleProps {
     senderAvatar?: string;
     isRead?: boolean;
     currentUserId: string;
+    onReply?: (message: Message) => void;
+    onScrollToMessage?: (messageId: string) => void;
 }
 
 export default function MessageBubble({
@@ -316,6 +318,8 @@ export default function MessageBubble({
     senderAvatar,
     isRead = false,
     currentUserId,
+    onReply,
+    onScrollToMessage,
 }: MessageBubbleProps) {
     const isDeleted = !!message.deletedAt;
     const isEdited = !!message.editedAt;
@@ -362,6 +366,20 @@ export default function MessageBubble({
                             {/* Emoji picker — only for received messages */}
                             {!isMine && <EmojiPicker messageId={message.id} isMine={isMine} />}
 
+                            {/* Reply button — only for received messages */}
+                            {onReply && !isMine && (
+                                <button
+                                    onClick={() => onReply(message)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700/60 text-gray-500 hover:text-indigo-400 transition-all"
+                                    aria-label="Reply to message"
+                                    title="Reply"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                    </svg>
+                                </button>
+                            )}
+
                             {/* Edit + Delete buttons — only for sender */}
                             {isMine && (
                                 <div className="flex items-center gap-0.5">
@@ -370,12 +388,37 @@ export default function MessageBubble({
                                 </div>
                             )}
 
-                            {/* The bubble */}
-                            <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${isMine ? "bg-indigo-600 text-white rounded-br-sm" : "bg-gray-800 text-gray-100 rounded-bl-sm"}`}>
-                                {message.content}
-                                {isEdited && (
-                                    <span className={`text-[10px] ml-1.5 italic ${isMine ? "text-indigo-200/60" : "text-gray-500"}`}>(edited)</span>
+                            {/* The bubble (with optional reply preview) */}
+                            <div className={`rounded-2xl text-sm leading-relaxed break-words ${isMine ? "bg-indigo-600 text-white rounded-br-sm" : "bg-gray-800 text-gray-100 rounded-bl-sm"}`}>
+                                {/* Reply preview quote */}
+                                {message.replyPreview && (
+                                    <button
+                                        onClick={() => message.replyToId && onScrollToMessage?.(message.replyToId)}
+                                        className={`
+                                            w-full text-left px-3 pt-2.5 pb-1
+                                            flex items-stretch gap-2
+                                            hover:opacity-80 transition-opacity cursor-pointer
+                                        `}
+                                    >
+                                        <div className={`w-[3px] rounded-full flex-shrink-0 ${isMine ? "bg-indigo-300/50" : "bg-indigo-500/60"}`} />
+                                        <div className="min-w-0 flex-1">
+                                            <p className={`text-[10px] font-semibold truncate ${isMine ? "text-indigo-200" : "text-indigo-400"}`}>
+                                                {message.replyPreview.senderName}
+                                            </p>
+                                            <p className={`text-[11px] truncate ${isMine ? "text-indigo-100/60" : "text-gray-400"}`}>
+                                                {message.replyPreview.isDeleted ? "This message was deleted" : message.replyPreview.content}
+                                            </p>
+                                        </div>
+                                    </button>
                                 )}
+
+                                {/* Message content */}
+                                <div className="px-4 py-2.5">
+                                    {message.content}
+                                    {isEdited && (
+                                        <span className={`text-[10px] ml-1.5 italic ${isMine ? "text-indigo-200/60" : "text-gray-500"}`}>(edited)</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import type { Conversation } from "@/types/conversation";
+import type { Message } from "@/types/message";
 import { useIsOnline } from "@/hooks/useIsOnline";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import ChatInput from "./ChatInput";
@@ -156,6 +157,24 @@ function MessagesArea({
     isGroup: boolean;
     recipientName: string;
 }) {
+    const [replyTo, setReplyTo] = useState<Message | null>(null);
+    const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+    const handleReply = useCallback((message: Message) => {
+        setReplyTo(message);
+    }, []);
+
+    const handleScrollToMessage = useCallback((messageId: string) => {
+        const el = messageRefs.current.get(messageId);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Flash highlight
+            el.classList.add("ring-2", "ring-indigo-500/50", "bg-indigo-500/10");
+            setTimeout(() => {
+                el.classList.remove("ring-2", "ring-indigo-500/50", "bg-indigo-500/10");
+            }, 1500);
+        }
+    }, []);
     const markRead = useMutation(api.readReceipts.markConversationRead);
 
     const messages = useQuery(api.messages.getMessages, {
@@ -251,7 +270,13 @@ function MessagesArea({
                             const isRead = isMine && otherLastReadAt >= msg.createdAt;
 
                             return (
-                                <div key={msg._id as string}>
+                                <div
+                                    key={msg._id as string}
+                                    ref={(el) => {
+                                        if (el) messageRefs.current.set(msg._id as string, el);
+                                    }}
+                                    className="rounded-xl transition-all duration-500"
+                                >
                                     {index === firstUnreadIndex && dividerCount > 0 && (
                                         <div className="flex items-center gap-3 my-4">
                                             <div className="flex-1 h-px bg-indigo-500/30" />
@@ -270,6 +295,8 @@ function MessagesArea({
                                             createdAt: msg.createdAt,
                                             deletedAt: msg.deletedAt,
                                             editedAt: msg.editedAt,
+                                            replyToId: msg.replyToId as string | undefined,
+                                            replyPreview: msg.replyPreview ?? undefined,
                                         }}
                                         isMine={isMine}
                                         showAvatar={showAvatar}
@@ -277,6 +304,8 @@ function MessagesArea({
                                         senderAvatar={showAvatar ? (sender?.imageUrl ?? msg.senderImage) : undefined}
                                         isRead={isRead}
                                         currentUserId={currentUserId}
+                                        onReply={handleReply}
+                                        onScrollToMessage={handleScrollToMessage}
                                     />
                                 </div>
                             );
@@ -312,7 +341,12 @@ function MessagesArea({
                 )}
             </div>
 
-            <ChatInput conversationId={conversationId} recipientName={recipientName} />
+            <ChatInput
+                conversationId={conversationId}
+                recipientName={recipientName}
+                replyTo={replyTo}
+                onClearReply={() => setReplyTo(null)}
+            />
         </>
     );
 }

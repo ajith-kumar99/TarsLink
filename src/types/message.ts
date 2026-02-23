@@ -5,4 +5,10 @@ export type Message = {
     createdAt: number;
     deletedAt?: number;
     editedAt?: number;
+    replyToId?: string;
+    replyPreview?: {
+        senderName: string;
+        content: string;
+        isDeleted: boolean;
+    };
 };

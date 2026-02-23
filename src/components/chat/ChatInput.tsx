@@ -5,10 +5,13 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import type { Message } from "@/types/message";
 
 interface ChatInputProps {
     conversationId: string;
     recipientName?: string;
+    replyTo?: Message | null;
+    onClearReply?: () => void;
 }
 
 const TYPING_THROTTLE_MS = 500;
@@ -32,7 +35,7 @@ function Waveform({ levels }: { levels: number[] }) {
 }
 
 // ─── ChatInput ───────────────────────────────────────────────────────────────
-export default function ChatInput({ conversationId, recipientName }: ChatInputProps) {
+export default function ChatInput({ conversationId, recipientName, replyTo, onClearReply }: ChatInputProps) {
     const [value, setValue] = useState("");
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -111,7 +114,9 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
             await sendMessage({
                 conversationId: conversationId as Id<"conversations">,
                 content: trimmed,
+                ...(replyTo ? { replyToId: replyTo.id as Id<"messages"> } : {}),
             });
+            onClearReply?.();
         } catch (err) {
             console.error("Failed to send message:", err);
             setValue(trimmed);
@@ -140,6 +145,25 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
 
     return (
         <div className="px-4 py-3 border-t border-gray-800 bg-gray-900">
+            {/* Reply preview bar */}
+            {replyTo && (
+                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl">
+                    <div className="w-[3px] h-8 bg-indigo-500 rounded-full flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold text-indigo-400 truncate">Replying to</p>
+                        <p className="text-xs text-gray-400 truncate">{replyTo.content}</p>
+                    </div>
+                    <button
+                        onClick={onClearReply}
+                        className="flex-shrink-0 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+                        aria-label="Cancel reply"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            )}
             {/* Inline error banner */}
             {error && (
                 <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 bg-red-900/30 border border-red-800/40 rounded-xl">
