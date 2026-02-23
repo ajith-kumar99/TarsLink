@@ -269,6 +269,7 @@ function MessagesArea({
                                             content: msg.content,
                                             createdAt: msg.createdAt,
                                             deletedAt: msg.deletedAt,
+                                            editedAt: msg.editedAt,
                                         }}
                                         isMine={isMine}
                                         showAvatar={showAvatar}

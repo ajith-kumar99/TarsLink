@@ -4,4 +4,5 @@ export type Message = {
     content: string;
     createdAt: number;
     deletedAt?: number;
+    editedAt?: number;
 };

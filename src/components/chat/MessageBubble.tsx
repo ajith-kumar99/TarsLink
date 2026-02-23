@@ -69,6 +69,121 @@ function DeleteButton({ messageId }: { messageId: string }) {
     );
 }
 
+// ─── Edit inline ─────────────────────────────────────────────────────────────
+function EditButton({ messageId, currentContent, onEditStart }: {
+    messageId: string;
+    currentContent: string;
+    onEditStart: () => void;
+}) {
+    return (
+        <button
+            onClick={onEditStart}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700/60 text-gray-500 hover:text-indigo-400 transition-all"
+            aria-label="Edit message"
+            title="Edit message"
+        >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+            </svg>
+        </button>
+    );
+}
+
+function InlineEditor({ messageId, currentContent, onDone }: {
+    messageId: string;
+    currentContent: string;
+    onDone: () => void;
+}) {
+    const [value, setValue] = useState(currentContent);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(false);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const editMessage = useMutation(api.messages.editMessage);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+        // Move cursor to end
+        const len = inputRef.current?.value.length ?? 0;
+        inputRef.current?.setSelectionRange(len, len);
+    }, []);
+
+    const handleSave = async () => {
+        const trimmed = value.trim();
+        if (!trimmed || trimmed === currentContent) {
+            onDone();
+            return;
+        }
+        try {
+            setSaving(true);
+            setError(false);
+            await editMessage({
+                messageId: messageId as Id<"messages">,
+                content: trimmed,
+            });
+            onDone();
+        } catch (err) {
+            console.error("Failed to edit message:", err);
+            setError(true);
+            setTimeout(() => setError(false), 2000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSave();
+        }
+        if (e.key === "Escape") {
+            onDone();
+        }
+    };
+
+    return (
+        <div className="w-full">
+            <textarea
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={1}
+                disabled={saving}
+                className="
+                    w-full bg-gray-700/80 text-sm text-gray-100
+                    rounded-xl px-3 py-2 outline-none resize-none
+                    focus:ring-1 focus:ring-indigo-500 transition-all
+                    max-h-[120px] overflow-y-auto
+                    disabled:opacity-60
+                "
+                style={{ minWidth: "180px" }}
+            />
+            <div className="flex items-center gap-2 mt-1.5">
+                {error && <span className="text-[10px] text-red-400">Failed to save</span>}
+                <span className="text-[10px] text-gray-500 flex-1">
+                    Esc to cancel · Enter to save
+                </span>
+                <button
+                    onClick={onDone}
+                    disabled={saving}
+                    className="px-2 py-0.5 text-[10px] font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSave}
+                    disabled={saving || !value.trim()}
+                    className="px-2 py-0.5 text-[10px] font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors disabled:opacity-40"
+                >
+                    {saving ? "Saving…" : "Save"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 // ─── Emoji Picker (shows on hover) ───────────────────────────────────────────
 function EmojiPicker({
     messageId,
@@ -203,6 +318,8 @@ export default function MessageBubble({
     currentUserId,
 }: MessageBubbleProps) {
     const isDeleted = !!message.deletedAt;
+    const isEdited = !!message.editedAt;
+    const [editing, setEditing] = useState(false);
 
     return (
         <div className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"} group`}>
@@ -231,6 +348,13 @@ export default function MessageBubble({
                             This message was deleted
                         </span>
                     </div>
+                ) : editing ? (
+                    /* ── Inline edit mode ── */
+                    <InlineEditor
+                        messageId={message.id}
+                        currentContent={message.content}
+                        onDone={() => setEditing(false)}
+                    />
                 ) : (
                     /* ── Normal message ── */
                     <>
@@ -238,12 +362,20 @@ export default function MessageBubble({
                             {/* Emoji picker — only for received messages */}
                             {!isMine && <EmojiPicker messageId={message.id} isMine={isMine} />}
 
-                            {/* Delete button — only for sender */}
-                            {isMine && <DeleteButton messageId={message.id} />}
+                            {/* Edit + Delete buttons — only for sender */}
+                            {isMine && (
+                                <div className="flex items-center gap-0.5">
+                                    <EditButton messageId={message.id} currentContent={message.content} onEditStart={() => setEditing(true)} />
+                                    <DeleteButton messageId={message.id} />
+                                </div>
+                            )}
 
                             {/* The bubble */}
                             <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${isMine ? "bg-indigo-600 text-white rounded-br-sm" : "bg-gray-800 text-gray-100 rounded-bl-sm"}`}>
                                 {message.content}
+                                {isEdited && (
+                                    <span className={`text-[10px] ml-1.5 italic ${isMine ? "text-indigo-200/60" : "text-gray-500"}`}>(edited)</span>
+                                )}
                             </div>
                         </div>
 

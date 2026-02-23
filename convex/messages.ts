@@ -112,3 +112,44 @@ export const deleteMessage = mutation({
         });
     },
 });
+
+// ─── editMessage ──────────────────────────────────────────────────────────────
+/**
+ * Updates a message's content. Only the original sender can edit.
+ * Cannot edit deleted messages.
+ */
+export const editMessage = mutation({
+    args: {
+        messageId: v.id("messages"),
+        content: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const me = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+        if (!me) throw new Error("User not found");
+
+        const message = await ctx.db.get(args.messageId);
+        if (!message) throw new Error("Message not found");
+
+        if (String(message.senderId) !== String(me._id)) {
+            throw new Error("You can only edit your own messages");
+        }
+
+        if (message.deletedAt) {
+            throw new Error("Cannot edit a deleted message");
+        }
+
+        const content = args.content.trim();
+        if (!content) throw new Error("Message cannot be empty");
+
+        await ctx.db.patch(args.messageId, {
+            content,
+            editedAt: Date.now(),
+        });
+    },
+});
