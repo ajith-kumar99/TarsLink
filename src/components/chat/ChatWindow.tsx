@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -11,10 +12,11 @@ import { useIsOnline } from "@/hooks/useIsOnline";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
+import ChatSummaryDialog from "./ChatSummaryDialog";
 
 interface ChatWindowProps {
     conversation: Conversation | null;
-    onBack?: () => void;
+    onBack?: () => void; // deprecated — ChatWindow now uses useRouter internally
     currentUserId: string;
 }
 
@@ -67,9 +69,9 @@ function MessagesSkeleton() {
                 <div key={i} className={`flex ${row.align === "end" ? "justify-end" : "justify-start"}`}>
                     <div className={`flex items-end gap-2 ${row.align === "end" ? "flex-row-reverse" : ""}`}>
                         {row.align === "start" && (
-                            <div className="w-7 h-7 rounded-full bg-gray-800/60 animate-pulse flex-shrink-0" />
+                            <div className="w-7 h-7 rounded-full bg-gray-200/60 dark:bg-gray-800/60 animate-pulse flex-shrink-0" />
                         )}
-                        <div className={`h-10 rounded-2xl animate-pulse ${row.w} ${row.align === "end" ? "bg-indigo-900/30" : "bg-gray-800/60"}`} />
+                        <div className={`h-10 rounded-2xl animate-pulse ${row.w} ${row.align === "end" ? "bg-indigo-100/50 dark:bg-indigo-900/30" : "bg-gray-200/60 dark:bg-gray-800/60"}`} />
                     </div>
                 </div>
             ))}
@@ -81,16 +83,16 @@ function MessagesSkeleton() {
 function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
     return (
         <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 rounded-full bg-gray-200/50 dark:bg-gray-800/50 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                         d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                     />
                 </svg>
             </div>
-            <p className="text-gray-300 text-sm font-medium mb-1">No messages yet</p>
+            <p className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">No messages yet</p>
             <p className="text-gray-500 text-xs max-w-[200px]">
-                Say hello to <span className="text-indigo-400">{recipientName}</span> and start the conversation!
+                Say hello to <span className="text-indigo-500 dark:text-indigo-400">{recipientName}</span> and start the conversation!
             </p>
         </div>
     );
@@ -98,18 +100,18 @@ function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
 
 function NoConversationPlaceholder() {
     return (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gray-950 text-center px-6">
-            <div className="w-20 h-20 rounded-2xl bg-gray-800/40 flex items-center justify-center mb-5">
-                <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 text-center px-6">
+            <div className="w-20 h-20 rounded-2xl bg-gray-200/40 dark:bg-gray-800/40 flex items-center justify-center mb-5">
+                <svg className="w-10 h-10 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                         d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                     />
                 </svg>
             </div>
-            <h2 className="text-lg font-semibold text-white mb-2">Your Messages</h2>
-            <p className="text-gray-400 text-sm max-w-xs leading-relaxed">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Your Messages</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs leading-relaxed">
                 Select a conversation from the sidebar or discover users in the{" "}
-                <span className="text-indigo-400 font-medium">People</span> tab to get started.
+                <span className="text-indigo-500 dark:text-indigo-400 font-medium">People</span> tab to get started.
             </p>
         </div>
     );
@@ -317,12 +319,12 @@ function MessagesArea({
                         <div className="flex items-end gap-2">
                             <div className="w-7 h-7 flex-shrink-0" />
                             <div className="flex flex-col items-start">
-                                <div className="bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5 flex items-center gap-1.5">
+                                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5 flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
                                     <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
                                     <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
                                 </div>
-                                <span className="text-xs text-gray-600 mt-1 ml-1">
+                                <span className="text-xs text-gray-400 dark:text-gray-600 mt-1 ml-1">
                                     {typingUsers.length === 1
                                         ? `${typingUsers[0].userName} is typing…`
                                         : `${typingUsers.map((u) => u.userName).join(", ")} are typing…`}
@@ -357,13 +359,13 @@ function GroupMemberRow({ member, isCurrentUser }: { member: Conversation["membe
     return (
         <div className="flex items-center gap-3 px-4 py-2.5">
             <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                     <Image src={member.imageUrl} alt={member.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
                 </div>
-                {online && <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-gray-900" />}
+                {online && <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-white dark:border-gray-900" />}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {member.name}
                     {isCurrentUser && <span className="text-xs text-indigo-400 ml-1.5">(You)</span>}
                 </p>
@@ -376,10 +378,12 @@ function GroupMemberRow({ member, isCurrentUser }: { member: Conversation["membe
 }
 
 // ─── ChatWindow ───────────────────────────────────────────────────────────────
-export default function ChatWindow({ conversation, onBack, currentUserId }: ChatWindowProps) {
+export default function ChatWindow({ conversation, currentUserId }: ChatWindowProps) {
+    const router = useRouter();
     const otherLastSeen = conversation ? getOtherLastSeen(conversation, currentUserId) : undefined;
     const online = useIsOnline(otherLastSeen);
     const [showMembers, setShowMembers] = useState(false);
+    const [showSummary, setShowSummary] = useState(false);
 
     if (!conversation) {
         return <NoConversationPlaceholder />;
@@ -389,21 +393,24 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
     const avatar = getDisplayAvatar(conversation, currentUserId);
 
     return (
-        <div className="flex flex-col h-full bg-gray-950">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950">
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900">
-                {onBack && (
-                    <button onClick={onBack} className="md:hidden text-gray-400 hover:text-white p-1 -ml-1 mr-1" aria-label="Go back">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                )}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                {/* Mobile back button */}
+                <button
+                    onClick={() => router.push("/chat")}
+                    className="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 -ml-1 mr-1"
+                    aria-label="Go back"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
                 <div className="relative flex-shrink-0">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-700">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                         <Image src={avatar} alt={name} width={36} height={36} className="w-full h-full object-cover" unoptimized />
                     </div>
-                    {online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />}
+                    {online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-900" />}
                 </div>
 
                 {/* Clickable name / status — toggles members panel for groups */}
@@ -411,7 +418,7 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
                     onClick={() => conversation.isGroup && setShowMembers((v) => !v)}
                     className={`flex-1 min-w-0 text-left ${conversation.isGroup ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
                 >
-                    <h2 className="text-sm font-semibold text-white truncate">{name}</h2>
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{name}</h2>
                     <p className={`text-xs ${conversation.isGroup ? "text-gray-400" : online ? "text-emerald-400" : "text-gray-500"}`}>
                         {conversation.isGroup
                             ? `${conversation.members.length} members · tap to ${showMembers ? "hide" : "view"}`
@@ -419,11 +426,25 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
                     </p>
                 </button>
 
+                {/* AI Summary button */}
+                <button
+                    onClick={() => setShowSummary(true)}
+                    className="p-1.5 rounded-lg transition-colors text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    aria-label="AI Summary"
+                    title="Summarize chat with AI"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"
+                        />
+                    </svg>
+                </button>
+
                 {/* Members toggle icon for groups */}
                 {conversation.isGroup && (
                     <button
                         onClick={() => setShowMembers((v) => !v)}
-                        className={`p-1.5 rounded-lg transition-colors ${showMembers ? "bg-indigo-600/20 text-indigo-400" : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"}`}
+                        className={`p-1.5 rounded-lg transition-colors ${showMembers ? "bg-indigo-600/20 text-indigo-400" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                         aria-label="Toggle members panel"
                         title="Group members"
                     >
@@ -436,7 +457,7 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
 
             {/* Group Members Panel (slides open) */}
             {conversation.isGroup && showMembers && (
-                <div className="border-b border-gray-800 bg-gray-900/80 overflow-y-auto max-h-60">
+                <div className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 overflow-y-auto max-h-60">
                     <div className="flex items-center justify-between px-4 pt-3 pb-1">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
                             Members ({conversation.members.length})
@@ -461,6 +482,14 @@ export default function ChatWindow({ conversation, onBack, currentUserId }: Chat
                 conversationMembers={conversation.members}
                 isGroup={conversation.isGroup}
                 recipientName={name}
+            />
+
+            {/* AI Summary Dialog */}
+            <ChatSummaryDialog
+                conversationId={conversation.id}
+                conversationName={name}
+                open={showSummary}
+                onClose={() => setShowSummary(false)}
             />
         </div>
     );

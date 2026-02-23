@@ -14,11 +14,11 @@ export default function ChatLayout({
     selectedConversation,
 }: ChatLayoutProps) {
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-gray-950">
+        <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-gray-950">
             {/* Sidebar — hidden on mobile when a conversation is selected */}
             <aside
                 className={`
-          flex-shrink-0 w-80 border-r border-gray-800 flex flex-col
+          flex-shrink-0 w-80 border-r border-gray-200 dark:border-gray-800 flex flex-col
           ${selectedConversation ? "hidden md:flex" : "flex w-full md:w-80"}
         `}
             >

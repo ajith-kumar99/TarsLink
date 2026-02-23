@@ -144,18 +144,18 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
     };
 
     return (
-        <div className="px-4 py-3 border-t border-gray-800 bg-gray-900">
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
             {/* Reply preview bar */}
             {replyTo && (
-                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl">
+                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
                     <div className="w-[3px] h-8 bg-indigo-500 rounded-full flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold text-indigo-400 truncate">Replying to</p>
-                        <p className="text-xs text-gray-400 truncate">{replyTo.content}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{replyTo.content}</p>
                     </div>
                     <button
                         onClick={onClearReply}
-                        className="flex-shrink-0 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+                        className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         aria-label="Cancel reply"
                     >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,11 +216,11 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
 
             {/* ── Recording bar (replaces the text input while listening) ── */}
             {isListening ? (
-                <div className="flex items-center gap-3 bg-gray-800 rounded-2xl px-4 py-2.5">
+                <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2.5">
                     {/* Cancel button */}
                     <button
                         onClick={handleCancel}
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                         aria-label="Cancel recording"
                         title="Cancel recording"
                     >
@@ -238,7 +238,7 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
 
                     {/* Live transcript preview */}
                     {transcript && (
-                        <p className="text-xs text-gray-400 max-w-[120px] truncate italic flex-shrink-0">{transcript}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[120px] truncate italic flex-shrink-0">{transcript}</p>
                     )}
 
                     {/* Stop & use button */}
@@ -256,7 +256,7 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
                 </div>
             ) : (
                 /* ── Normal input bar ── */
-                <div className="flex items-end gap-3 bg-gray-800 rounded-2xl px-4 py-2 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+                <div className="flex items-end gap-3 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
                     <textarea
                         ref={textareaRef}
                         value={value}
@@ -271,7 +271,7 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
                         rows={1}
                         disabled={sending}
                         className="
-                            flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500
+                            flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                             resize-none outline-none overflow-hidden leading-relaxed py-1
                             max-h-[120px] disabled:opacity-70
                         "
@@ -287,8 +287,8 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
                             flex-shrink-0 w-8 h-8 flex items-center justify-center
                             rounded-full transition-all
                             ${speechSupported
-                                ? "text-gray-400 hover:text-white hover:bg-gray-700"
-                                : "text-gray-600 cursor-not-allowed opacity-40"
+                                ? "text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                                : "text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-40"
                             }
                         `}
                     >
@@ -323,9 +323,9 @@ export default function ChatInput({ conversationId, recipientName, replyTo, onCl
             )}
 
             {!isListening && (
-                <p className="text-xs text-gray-600 mt-1.5 ml-1">
-                    Press <kbd className="font-mono bg-gray-800 px-1 rounded">Enter</kbd> to send,{" "}
-                    <kbd className="font-mono bg-gray-800 px-1 rounded">Shift+Enter</kbd> for new line
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1.5 ml-1">
+                    Press <kbd className="font-mono bg-gray-200 dark:bg-gray-800 px-1 rounded">Enter</kbd> to send,{" "}
+                    <kbd className="font-mono bg-gray-200 dark:bg-gray-800 px-1 rounded">Shift+Enter</kbd> for new line
                 </p>
             )}
         </div>

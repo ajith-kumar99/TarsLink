@@ -12,10 +12,10 @@ import { useIsOnline } from "@/hooks/useIsOnline";
 function UserRowSkeleton() {
     return (
         <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 rounded-full bg-gray-800 animate-pulse flex-shrink-0" />
+            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse flex-shrink-0" />
             <div className="flex-1 space-y-2">
-                <div className="h-3 bg-gray-800 rounded animate-pulse w-2/3" />
-                <div className="h-2 bg-gray-800 rounded animate-pulse w-1/3" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-2/3" />
+                <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-1/3" />
             </div>
         </div>
     );
@@ -65,21 +65,21 @@ function UserRow({
             disabled={isStarting}
             className="
                 w-full flex items-center gap-3 px-4 py-3 text-left
-                hover:bg-gray-800 transition-colors
+                hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
                 disabled:opacity-60 disabled:cursor-wait
             "
         >
             <div className="relative flex-shrink-0">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                     <Image src={user.imageUrl} alt={user.name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                 </div>
                 {online && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-900" />
                 )}
             </div>
 
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
                 <p className={`text-xs ${online ? "text-emerald-400" : "text-gray-500"}`}>
                     {online ? "Online" : "Offline"}
                 </p>
@@ -137,7 +137,7 @@ export default function UserList() {
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search people…"
                         className="
-                            w-full bg-gray-800 text-sm text-gray-100 placeholder-gray-500
+                            w-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                             rounded-xl pl-9 pr-4 py-2 outline-none
                             focus:ring-1 focus:ring-indigo-500 transition-all
                         "
@@ -178,8 +178,8 @@ export default function UserList() {
                 {/* No results */}
                 {filtered !== undefined && filtered.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-36 text-center px-6">
-                        <div className="w-12 h-12 rounded-full bg-gray-800/50 flex items-center justify-center mb-3">
-                            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 rounded-full bg-gray-200/50 dark:bg-gray-800/50 flex items-center justify-center mb-3">
+                            <svg className="w-6 h-6 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                             </svg>
                         </div>

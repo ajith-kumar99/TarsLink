@@ -22,7 +22,14 @@ function adaptConversation(doc: any): Conversation {
             isOnline: m.isOnline as boolean,
             lastSeen: m.lastSeen as number | undefined,
         })),
-        lastMessage: undefined,
+        lastMessage: doc.lastMessage
+            ? {
+                id: "",
+                senderId: doc.lastMessage.senderId as string,
+                content: doc.lastMessage.content as string,
+                createdAt: doc.lastMessage.createdAt as number,
+            }
+            : undefined,
     };
 }
 
@@ -44,6 +51,7 @@ export default function ChatPage() {
                     currentUserId={user?._id as string ?? ""}
                     currentUserName={user?.name ?? ""}
                     currentUserImage={user?.imageUrl ?? ""}
+                    currentUserEmail={user?.email ?? ""}
                     isLoading={userLoading || convLoading}
                 />
             }

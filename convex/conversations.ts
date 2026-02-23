@@ -23,6 +23,15 @@ export const getConversations = query({
         const enriched = await Promise.all(
             mine.map(async (conv) => {
                 const members = await Promise.all(conv.members.map((uid) => ctx.db.get(uid)));
+
+                // Fetch last message for sidebar preview
+                const messages = await ctx.db
+                    .query("messages")
+                    .withIndex("by_conversation", (q) => q.eq("conversationId", conv._id))
+                    .order("desc")
+                    .take(1);
+                const lastMsg = messages[0] ?? null;
+
                 return {
                     ...conv,
                     members: members
@@ -30,9 +39,15 @@ export const getConversations = query({
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .map((m: any) => ({
                             ...m,
-                            // Pass raw lastSeen to client — client computes isOnline
                             lastSeen: m.lastSeen ?? 0,
                         })),
+                    lastMessage: lastMsg
+                        ? {
+                            content: lastMsg.deletedAt ? "This message was deleted" : lastMsg.content,
+                            senderId: lastMsg.senderId,
+                            createdAt: lastMsg.createdAt,
+                        }
+                        : null,
                 };
             })
         );

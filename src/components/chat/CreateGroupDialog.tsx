@@ -84,16 +84,16 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
 
             {/* Dialog */}
             <div
-                className="relative w-full max-w-md mx-4 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
+                className="relative w-full max-w-md mx-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="px-5 pt-5 pb-3">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-white">Create Group</h2>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Create Group</h2>
                         <button
                             onClick={onClose}
-                            className="p-1 rounded-lg hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors"
+                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             aria-label="Close"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                         placeholder="Group name…"
                         autoFocus
                         className="
-                            w-full bg-gray-800 text-sm text-gray-100 placeholder-gray-500
+                            w-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                             rounded-xl px-4 py-2.5 outline-none mb-3
                             focus:ring-1 focus:ring-indigo-500 transition-all
                         "
@@ -127,7 +127,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search people…"
                             className="
-                                w-full bg-gray-800 text-sm text-gray-100 placeholder-gray-500
+                                w-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                                 rounded-xl pl-9 pr-4 py-2 outline-none
                                 focus:ring-1 focus:ring-indigo-500 transition-all
                             "
@@ -148,8 +148,8 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                         <div className="space-y-1 px-3">
                             {Array.from({ length: 5 }).map((_, i) => (
                                 <div key={i} className="flex items-center gap-3 py-2.5">
-                                    <div className="w-9 h-9 rounded-full bg-gray-800 animate-pulse flex-shrink-0" />
-                                    <div className="h-3 bg-gray-800 rounded animate-pulse w-1/2" />
+                                    <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse flex-shrink-0" />
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-1/2" />
                                 </div>
                             ))}
                         </div>
@@ -170,20 +170,20 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                                 onClick={() => toggleUser(userId)}
                                 className={`
                                     w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors
-                                    ${isSelected ? "bg-indigo-600/15" : "hover:bg-gray-800"}
+                                    ${isSelected ? "bg-indigo-600/15" : "hover:bg-gray-100 dark:hover:bg-gray-800"}
                                 `}
                             >
-                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                                     <Image src={user.imageUrl} alt={user.name} width={36} height={36} className="w-full h-full object-cover" unoptimized />
                                 </div>
-                                <span className="text-sm font-medium text-white truncate flex-1">{user.name}</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">{user.name}</span>
 
                                 {/* Checkbox */}
                                 <div className={`
                                     w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors
                                     ${isSelected
                                         ? "bg-indigo-600 border-indigo-600"
-                                        : "border-gray-600"
+                                        : "border-gray-300 dark:border-gray-600"
                                     }
                                 `}>
                                     {isSelected && (
@@ -198,7 +198,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-4 border-t border-gray-800">
+                <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-800">
                     {/* Inline error */}
                     {error && (
                         <div className="flex items-center gap-1.5 mb-3 px-3 py-2 bg-red-900/30 border border-red-800/40 rounded-xl">
