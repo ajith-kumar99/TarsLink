@@ -135,20 +135,3 @@ export const listUsersExceptMe = query({
             }));
     },
 });
-
-/**
- * debugAuth — returns the Clerk identity as Convex sees it.
- * DELETE THIS before production.
- */
-export const debugAuth = query({
-    args: {},
-    handler: async (ctx) => {
-        const identity = await ctx.auth.getUserIdentity();
-        const allUsers = await ctx.db.query("users").collect();
-        return {
-            identity: identity ? { subject: identity.subject, name: identity.name } : null,
-            totalUsersInDB: allUsers.length,
-            users: allUsers.map((u) => ({ name: u.name, clerkId: u.clerkId, lastSeen: u.lastSeen })),
-        };
-    },
-});

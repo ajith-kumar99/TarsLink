@@ -126,24 +126,28 @@ function ProfileCard({
     email,
     imageUrl,
     onClose,
+    toggleRef,
 }: {
     name: string;
     email: string;
     imageUrl: string;
     onClose: () => void;
+    toggleRef: React.RefObject<HTMLButtonElement | null>;
 }) {
     const { signOut } = useClerk();
     const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
-                onClose();
-            }
+            const target = e.target as Node;
+            // Ignore clicks inside the card or on the toggle button
+            if (cardRef.current?.contains(target)) return;
+            if (toggleRef.current?.contains(target)) return;
+            onClose();
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [onClose]);
+    }, [onClose, toggleRef]);
 
     return (
         <div
@@ -219,6 +223,7 @@ export default function Sidebar({
     const [tab, setTab] = useState<Tab>("chats");
     const [showGroupDialog, setShowGroupDialog] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const profileToggleRef = useRef<HTMLButtonElement>(null);
     const [chatFilter, setChatFilter] = useState<ChatFilter>("all");
 
     return (
@@ -333,12 +338,13 @@ export default function Sidebar({
                         email={currentUserEmail}
                         imageUrl={currentUserImage}
                         onClose={() => setShowProfile(false)}
+                        toggleRef={profileToggleRef}
                     />
                 )}
 
                 <button
+                    ref={profileToggleRef}
                     onClick={() => setShowProfile((v) => !v)}
-                    onMouseDown={(e) => e.stopPropagation()}
                     className="w-full flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                     <div className="relative flex-shrink-0">

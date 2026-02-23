@@ -5,30 +5,29 @@ import { useQuery } from "convex/react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "../../../../../convex/_generated/api";
 import type { Conversation } from "@/types/conversation";
+import type { ConvexConversationDoc } from "@/types/convex";
 import ChatLayout from "@/components/layout/ChatLayout";
 import Sidebar from "@/components/chat/Sidebar";
 import ChatWindow from "@/components/chat/ChatWindow";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function adaptConversation(doc: any): Conversation {
+function adaptConversation(doc: ConvexConversationDoc): Conversation {
     return {
-        id: doc._id as string,
-        isGroup: doc.isGroup as boolean,
-        name: doc.name as string | undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        members: (doc.members ?? []).filter(Boolean).map((m: any) => ({
-            id: m._id as string,
-            name: m.name as string,
-            imageUrl: m.imageUrl as string,
-            isOnline: m.isOnline as boolean,
-            lastSeen: m.lastSeen as number | undefined,
+        id: doc._id,
+        isGroup: doc.isGroup,
+        name: doc.name,
+        members: (doc.members ?? []).filter(Boolean).map((m) => ({
+            id: m._id,
+            name: m.name,
+            imageUrl: m.imageUrl,
+            isOnline: m.isOnline ?? false,
+            lastSeen: m.lastSeen,
         })),
         lastMessage: doc.lastMessage
             ? {
                 id: "",
-                senderId: doc.lastMessage.senderId as string,
-                content: doc.lastMessage.content as string,
-                createdAt: doc.lastMessage.createdAt as number,
+                senderId: doc.lastMessage.senderId,
+                content: doc.lastMessage.content,
+                createdAt: doc.lastMessage.createdAt,
             }
             : undefined,
     };

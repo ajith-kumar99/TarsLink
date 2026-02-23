@@ -82,17 +82,27 @@ function MessagesSkeleton() {
 // ─── Empty states ─────────────────────────────────────────────────────────────
 function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-16 h-16 rounded-full bg-gray-200/50 dark:bg-gray-800/50 flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                </svg>
+        <div className="flex flex-col items-center justify-center h-full text-center px-6 relative overflow-hidden">
+            {/* Subtle background glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+
+            <div className="relative animate-float">
+
+                {/* Main icon container with glassmorphism */}
+                <div className="w-24 h-24 rounded-full bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border border-white dark:border-gray-800 shadow-xl shadow-indigo-500/10 flex items-center justify-center mb-6 relative z-10">
+                    {/* Animated gradient ring */}
+
+                    <span className="text-5xl animate-wave origin-bottom-right drop-shadow-md">
+                        👋
+                    </span>
+                </div>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">No messages yet</p>
-            <p className="text-gray-500 text-xs max-w-[200px]">
-                Say hello to <span className="text-indigo-500 dark:text-indigo-400">{recipientName}</span> and start the conversation!
+
+            <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 mb-2 relative z-10">
+                It's quiet in here...
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[260px] leading-relaxed relative z-10">
+                Send a message to <span className="font-semibold text-indigo-600 dark:text-indigo-400">{recipientName}</span> to start conversational magic.
             </p>
         </div>
     );
@@ -100,18 +110,30 @@ function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
 
 function NoConversationPlaceholder() {
     return (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 text-center px-6">
-            <div className="w-20 h-20 rounded-2xl bg-gray-200/40 dark:bg-gray-800/40 flex items-center justify-center mb-5">
-                <svg className="w-10 h-10 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                    />
-                </svg>
+        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-950/50 backdrop-blur-sm text-center px-6 relative overflow-hidden">
+            {/* Ambient background glows */}
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-screen pointer-events-none animate-float" />
+            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-violet-500/10 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-screen pointer-events-none animate-float" style={{ animationDelay: '2s' }} />
+
+            <div className="relative z-10 animate-float">
+                <div className="w-24 h-24 rounded-3xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/50 dark:border-gray-800/50 shadow-2xl shadow-indigo-500/10 flex items-center justify-center mb-6 ring-1 ring-black/5 dark:ring-white/5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-inner">
+                        <svg className="w-7 h-7 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                            />
+                        </svg>
+                    </div>
+                </div>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Your Messages</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs leading-relaxed">
-                Select a conversation from the sidebar or discover users in the{" "}
-                <span className="text-indigo-500 dark:text-indigo-400 font-medium">People</span> tab to get started.
+
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mb-3 relative z-10">
+                Welcome to TarsLink
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-sm leading-relaxed relative z-10">
+                Select a conversation from the sidebar or head over to the{" "}
+                <span className="mx-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium border border-indigo-100 dark:border-indigo-500/20 shadow-sm">People</span>
+                tab to discover new connections.
             </p>
         </div>
     );

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         const prompt = `You are a helpful assistant that summarizes chat conversations. Summarize the following chat conversation from "${conversationName || "a chat"}". 
 
 Rules:
-- Provide a clear, concise summary in 5-10 bullet points
+- Provide a clear, concise summary in simple 2 paragraphs
 - Highlight key topics discussed, decisions made, and action items
 - Mention important participants when relevant
 - Use a professional but friendly tone

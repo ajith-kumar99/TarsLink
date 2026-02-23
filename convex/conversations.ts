@@ -35,9 +35,8 @@ export const getConversations = query({
                 return {
                     ...conv,
                     members: members
-                        .filter(Boolean)
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .map((m: any) => ({
+                        .filter((m): m is NonNullable<typeof m> => m !== null)
+                        .map((m) => ({
                             ...m,
                             lastSeen: m.lastSeen ?? 0,
                         })),
