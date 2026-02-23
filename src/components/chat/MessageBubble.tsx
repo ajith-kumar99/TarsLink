@@ -24,22 +24,31 @@ function MessageTicks({ isRead }: { isRead: boolean }) {
 // ─── Delete confirm ──────────────────────────────────────────────────────────
 function DeleteButton({ messageId }: { messageId: string }) {
     const [confirming, setConfirming] = useState(false);
+    const [error, setError] = useState(false);
     const deleteMessage = useMutation(api.messages.deleteMessage);
 
     const handleDelete = async () => {
         try {
             await deleteMessage({ messageId: messageId as Id<"messages"> });
+            setConfirming(false);
         } catch (err) {
             console.error("Failed to delete message:", err);
+            setError(true);
+            setTimeout(() => { setError(false); setConfirming(false); }, 2000);
         }
-        setConfirming(false);
     };
 
     if (confirming) {
         return (
             <div className="flex items-center gap-1">
-                <button onClick={handleDelete} className="px-2 py-0.5 text-[10px] font-medium bg-red-600 hover:bg-red-500 text-white rounded transition-colors">Delete</button>
-                <button onClick={() => setConfirming(false)} className="px-2 py-0.5 text-[10px] font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors">Cancel</button>
+                {error ? (
+                    <span className="text-[10px] text-red-400 px-2">Failed</span>
+                ) : (
+                    <>
+                        <button onClick={handleDelete} className="px-2 py-0.5 text-[10px] font-medium bg-red-600 hover:bg-red-500 text-white rounded transition-colors">Delete</button>
+                        <button onClick={() => setConfirming(false)} className="px-2 py-0.5 text-[10px] font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors">Cancel</button>
+                    </>
+                )}
             </div>
         );
     }
@@ -69,15 +78,19 @@ function EmojiPicker({
     isMine: boolean;
 }) {
     const toggleReaction = useMutation(api.reactions.toggleReaction);
+    const [error, setError] = useState(false);
 
     const handlePick = async (emoji: string) => {
         try {
+            setError(false);
             await toggleReaction({
                 messageId: messageId as Id<"messages">,
                 emoji,
             });
         } catch (err) {
             console.error("Failed to toggle reaction:", err);
+            setError(true);
+            setTimeout(() => setError(false), 2000);
         }
     };
 
@@ -92,21 +105,25 @@ function EmojiPicker({
                 transition-opacity duration-150
             `}
         >
-            {ALLOWED_EMOJIS.map((emoji) => (
-                <button
-                    key={emoji}
-                    onClick={() => handlePick(emoji)}
-                    className="
-                        w-7 h-7 flex items-center justify-center
-                        rounded-full text-sm
-                        hover:bg-gray-700 hover:scale-110
-                        transition-all duration-100
-                    "
-                    aria-label={`React with ${emoji}`}
-                >
-                    {emoji}
-                </button>
-            ))}
+            {error ? (
+                <span className="text-[10px] text-red-400 px-2">Failed</span>
+            ) : (
+                ALLOWED_EMOJIS.map((emoji) => (
+                    <button
+                        key={emoji}
+                        onClick={() => handlePick(emoji)}
+                        className="
+                            w-7 h-7 flex items-center justify-center
+                            rounded-full text-sm
+                            hover:bg-gray-700 hover:scale-110
+                            transition-all duration-100
+                        "
+                        aria-label={`React with ${emoji}`}
+                    >
+                        {emoji}
+                    </button>
+                ))
+            )}
         </div>
     );
 }

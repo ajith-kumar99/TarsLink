@@ -15,13 +15,13 @@ const TYPING_THROTTLE_MS = 500;
 export default function ChatInput({ conversationId, recipientName }: ChatInputProps) {
     const [value, setValue] = useState("");
     const [sending, setSending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastTypingSentRef = useRef<number>(0);
 
     const sendMessage = useMutation(api.messages.sendMessage);
     const setTyping = useMutation(api.typing.setTyping);
 
-    // Throttled typing signal — fires at most every 500 ms
     const notifyTyping = useCallback(() => {
         const now = Date.now();
         if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return;
@@ -32,6 +32,7 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
     const handleSend = async () => {
         const trimmed = value.trim();
         if (!trimmed || sending) return;
+        setError(null);
         try {
             setSending(true);
             setValue("");
@@ -42,7 +43,8 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
             });
         } catch (err) {
             console.error("Failed to send message:", err);
-            setValue(trimmed);
+            setValue(trimmed); // Restore text so user can retry
+            setError("Failed to send. Check your connection and try again.");
         } finally {
             setSending(false);
             textareaRef.current?.focus();
@@ -67,12 +69,42 @@ export default function ChatInput({ conversationId, recipientName }: ChatInputPr
 
     return (
         <div className="px-4 py-3 border-t border-gray-800 bg-gray-900">
+            {/* Inline error banner */}
+            {error && (
+                <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 bg-red-900/30 border border-red-800/40 rounded-xl">
+                    <p className="text-xs text-red-400 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {error}
+                    </p>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                            onClick={handleSend}
+                            className="text-[10px] font-semibold text-red-300 hover:text-white bg-red-800/40 hover:bg-red-700/60 px-2 py-0.5 rounded transition-colors"
+                        >
+                            Retry
+                        </button>
+                        <button
+                            onClick={() => setError(null)}
+                            className="text-red-500 hover:text-red-300 transition-colors"
+                            aria-label="Dismiss"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-end gap-3 bg-gray-800 rounded-2xl px-4 py-2 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
                 <textarea
                     ref={textareaRef}
                     value={value}
                     onChange={(e) => {
                         setValue(e.target.value);
+                        if (error) setError(null); // Clear error when user types
                         if (e.target.value.trim()) notifyTyping();
                     }}
                     onKeyDown={handleKeyDown}

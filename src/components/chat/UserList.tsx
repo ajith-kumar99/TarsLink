@@ -21,6 +21,32 @@ function UserRowSkeleton() {
     );
 }
 
+// ─── Inline error banner ──────────────────────────────────────────────────────
+function InlineError({ message, onRetry, onDismiss }: { message: string; onRetry?: () => void; onDismiss: () => void }) {
+    return (
+        <div className="flex items-center justify-between gap-2 mx-4 my-2 px-3 py-2 bg-red-900/30 border border-red-800/40 rounded-xl">
+            <p className="text-xs text-red-400 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {message}
+            </p>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+                {onRetry && (
+                    <button onClick={onRetry} className="text-[10px] font-semibold text-red-300 hover:text-white bg-red-800/40 hover:bg-red-700/60 px-2 py-0.5 rounded transition-colors">
+                        Retry
+                    </button>
+                )}
+                <button onClick={onDismiss} className="text-red-500 hover:text-red-300 transition-colors" aria-label="Dismiss">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    );
+}
+
 // ─── UserRow — isolated so useIsOnline hook can run per-user ──────────────────
 function UserRow({
     user,
@@ -43,24 +69,15 @@ function UserRow({
                 disabled:opacity-60 disabled:cursor-wait
             "
         >
-            {/* Avatar + online dot */}
             <div className="relative flex-shrink-0">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700">
-                    <Image
-                        src={user.imageUrl}
-                        alt={user.name}
-                        width={40}
-                        height={40}
-                        className="w-full h-full object-cover"
-                        unoptimized
-                    />
+                    <Image src={user.imageUrl} alt={user.name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                 </div>
                 {online && (
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-gray-900" />
                 )}
             </div>
 
-            {/* Name */}
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{user.name}</p>
                 <p className={`text-xs ${online ? "text-emerald-400" : "text-gray-500"}`}>
@@ -68,7 +85,6 @@ function UserRow({
                 </p>
             </div>
 
-            {/* Starting spinner */}
             {isStarting && (
                 <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
             )}
@@ -80,6 +96,8 @@ export default function UserList() {
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [loadingId, setLoadingId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [lastFailedId, setLastFailedId] = useState<string | null>(null);
 
     const users = useQuery(api.users.listUsersExceptMe);
     const getOrCreate = useMutation(api.conversations.getOrCreateConversation);
@@ -90,6 +108,7 @@ export default function UserList() {
 
     const handleSelectUser = async (userId: string) => {
         try {
+            setError(null);
             setLoadingId(userId);
             const convId = await getOrCreate({
                 otherUserId: userId as Id<"users">,
@@ -97,6 +116,8 @@ export default function UserList() {
             router.push(`/chat/${convId}`);
         } catch (err) {
             console.error("Failed to create conversation:", err);
+            setError("Couldn't start conversation. Try again.");
+            setLastFailedId(userId);
         } finally {
             setLoadingId(null);
         }
@@ -107,18 +128,8 @@ export default function UserList() {
             {/* Search input */}
             <div className="px-3 py-2">
                 <div className="relative">
-                    <svg
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-                        />
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                     </svg>
                     <input
                         type="text"
@@ -132,10 +143,7 @@ export default function UserList() {
                         "
                     />
                     {search && (
-                        <button
-                            onClick={() => setSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                        >
+                        <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                             ✕
                         </button>
                     )}
@@ -147,8 +155,18 @@ export default function UserList() {
                 People
             </p>
 
+            {/* Inline error */}
+            {error && (
+                <InlineError
+                    message={error}
+                    onRetry={lastFailedId ? () => handleSelectUser(lastFailedId) : undefined}
+                    onDismiss={() => { setError(null); setLastFailedId(null); }}
+                />
+            )}
+
             {/* List */}
             <div className="flex-1 overflow-y-auto">
+                {/* Loading skeletons */}
                 {users === undefined && (
                     <>
                         {Array.from({ length: 6 }).map((_, i) => (
@@ -157,11 +175,22 @@ export default function UserList() {
                     </>
                 )}
 
+                {/* No results */}
                 {filtered !== undefined && filtered.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-36 text-center px-6">
+                        <div className="w-12 h-12 rounded-full bg-gray-800/50 flex items-center justify-center mb-3">
+                            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                            </svg>
+                        </div>
                         <p className="text-gray-400 text-sm">
                             {search ? `No users matching "${search}"` : "No other users yet"}
                         </p>
+                        {search && (
+                            <button onClick={() => setSearch("")} className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 transition-colors">
+                                Clear search
+                            </button>
+                        )}
                     </div>
                 )}
 
