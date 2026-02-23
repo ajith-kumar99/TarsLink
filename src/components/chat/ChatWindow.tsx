@@ -275,6 +275,7 @@ function MessagesArea({
                                         senderName={isGroup ? (sender?.name ?? msg.senderName) : undefined}
                                         senderAvatar={showAvatar ? (sender?.imageUrl ?? msg.senderImage) : undefined}
                                         isRead={isRead}
+                                        currentUserId={currentUserId}
                                     />
                                 </div>
                             );
