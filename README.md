@@ -17,7 +17,7 @@
 
 Watch TarsLink in action — real-time messaging, AI summaries, voice input, and more:
 
-[![TarsLink Demo](https://cdn.loom.com/sessions/thumbnails/752d79dc752c48ce93ea25bb45bf51bf-with-play.gif)](https://www.loom.com/share/752d79dc752c48ce93ea25bb45bf51bf)
+▶️ **[Watch the Demo on Loom](https://www.loom.com/share/752d79dc752c48ce93ea25bb45bf51bf)**
 
 ---
 
