@@ -102,7 +102,7 @@ function NoMessagesPlaceholder({ recipientName }: { recipientName: string }) {
                 It's quiet in here...
             </h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[260px] leading-relaxed relative z-10">
-                Send a message to <span className="font-semibold text-indigo-600 dark:text-indigo-400">{recipientName}</span> to start conversational magic.
+                Send a message to <span className="font-semibold text-indigo-600 dark:text-indigo-400">{recipientName}</span> to start conversation.
             </p>
         </div>
     );

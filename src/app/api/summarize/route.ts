@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
 Rules:
 - Provide a clear, concise summary in simple 2 paragraphs
-- Highlight key topics discussed, decisions made, and action items
+- I want plain text no special characters because the text doesn't format correctly.
 - Mention important participants when relevant
 - Use a professional but friendly tone
 - If the conversation is casual, keep the summary light
