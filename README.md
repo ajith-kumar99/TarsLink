@@ -2,7 +2,7 @@
 
 ![TarsLink Banner](TarsLink.png)
 
-> **TarsLink is a modern, real-time chat application built with Next.js 16 and Convex — featuring AI-powered conversation summaries, voice-to-text messaging, emoji reactions, typing indicators, and a premium dark/light UI.**
+> **TarsLink is a modern, real-time chat application built with Next.js 16 and Convex - featuring AI-powered conversation summaries, voice-to-text messaging, emoji reactions, typing indicators, and a premium dark/light UI.**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Convex](https://img.shields.io/badge/Convex-Realtime%20Backend-ff6b35?style=for-the-badge)](https://convex.dev/)
@@ -15,7 +15,7 @@
 
 ## 🎥 Demo Video
 
-Watch TarsLink in action — real-time messaging, AI summaries, voice input, and more:
+Watch TarsLink in action - real-time messaging, AI summaries, voice input, and more:
 
 ▶️ **[Watch the Demo on Loom](https://www.loom.com/share/752d79dc752c48ce93ea25bb45bf51bf)**
 
@@ -33,14 +33,14 @@ Most messaging apps are either bloated with unnecessary features or too basic to
 
 ## ✨ The Solution: TarsLink
 
-TarsLink is a full-featured, real-time messaging platform that combines the speed of Convex's reactive backend with the intelligence of Google Gemini AI. Every message, reaction, and keystroke updates instantly across all connected clients — no refresh needed.
+TarsLink is a full-featured, real-time messaging platform that combines the speed of Convex's reactive backend with the intelligence of Google Gemini AI. Every message, reaction, and keystroke updates instantly across all connected clients  no refresh needed.
 
 ---
 
 ## 🌟 Key Features
 
 ### 💬 Real-Time Messaging
-Instant message delivery powered by **Convex reactive queries** — no WebSockets to manage, no polling intervals. Messages appear the moment they're sent, with zero configuration.
+Instant message delivery powered by **Convex reactive queries**  no WebSockets to manage, no polling intervals. Messages appear the moment they're sent, with zero configuration.
 
 ### 🤖 AI-Powered Chat Summaries
 Missed a long conversation? Click **"Summarize"** and **Gemini 2.5 Flash** analyzes the last 30 days of messages, generating a concise, readable summary in seconds.
@@ -55,7 +55,7 @@ Start private chats or create **named group conversations** with multiple partic
 React to any message with emojis. Reactions are displayed below messages with counts, and you can toggle your own reactions on and off.
 
 ### ✏️ Edit & Delete Messages
-Made a typo? **Edit** your messages in-line. Want to retract something? **Soft-delete** messages — they remain in the database but display as *"This message was deleted"*.
+Made a typo? **Edit** your messages in-line. Want to retract something? **Soft-delete** messages - they remain in the database but display as *"This message was deleted"*.
 
 ### ↩️ Reply to Messages
 Reply to specific messages with a quoted preview, maintaining conversation context even in busy group chats.
@@ -64,13 +64,13 @@ Reply to specific messages with a quoted preview, maintaining conversation conte
 See who's typing in real-time with **ephemeral typing state** that auto-expires after 2 seconds, keeping the database clean.
 
 ### 🟢 Online Presence
-User online/offline status with a **heartbeat system** — presence updates are tracked via `lastSeen` timestamps, showing accurate online indicators and "last seen" times.
+User online/offline status with a **heartbeat system** - presence updates are tracked via `lastSeen` timestamps, showing accurate online indicators and "last seen" times.
 
 ### 🔢 Unread Message Counts
 **Read receipts** track the last time each user viewed a conversation, displaying unread message badges in the sidebar.
 
 ### 🌗 Dark / Light Theme
-A smooth theme toggle with **system preference detection** and **localStorage persistence** — powered by a custom `ThemeProvider` with CSS transitions.
+A smooth theme toggle with **system preference detection** and **localStorage persistence**  powered by a custom `ThemeProvider` with CSS transitions.
 
 ### 📱 Auto-Scrolling
 Smart auto-scroll that follows new messages but pauses when you scroll up to read history, with a "scroll to bottom" indicator.
@@ -256,7 +256,7 @@ TarsLink is configured for one-click Vercel deployment with automatic Convex fun
 ### Steps
 
 1. Push your code to GitHub
-2. Import the repo on [vercel.com/new](https://vercel.com/new) — set **Root Directory** to `tarslink`
+2. Import the repo on [vercel.com/new](https://vercel.com/new) - set **Root Directory** to `tarslink`
 3. Add these environment variables in Vercel:
 
 | Variable | Value |
